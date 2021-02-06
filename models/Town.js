@@ -12,6 +12,12 @@ module.exports = db.sequelize.define(
         name: {
             type: Sequelize.STRING
         },
+        region: {
+            type: Sequelize.STRING
+        },
+        area: {
+            type: Sequelize.STRING
+        },
         manager_id: {
             type: Sequelize.INTEGER,
             references: {

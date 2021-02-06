@@ -39,14 +39,36 @@ router.get('/api/town/:id', authMiddleware, async ctx => {
     }
 })
 
+router.get('/api/townstate', authMiddleware, async ctx => {
+    try {
+        if(ctx.user.role_id != (1 || 2) || ctx.user.role_id == (1 || 2) && ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+        const regions = await sequelize.query(
+            `SELECT * FROM regions`
+        )
+        const areas = await sequelize.query(
+            `SELECT * FROM areas`
+        )
+        return ctx.body = {
+            regions: regions[0],
+            areas: areas[0]
+        }
+    } catch (e) {
+        ctx.body = e
+    }
+})
+
 router.post('/api/town', authMiddleware, async ctx => {
-    const {name} = ctx.request.body
+    const {name, region, area} = ctx.request.body
     try {
         if(ctx.user.role_id != 1 && ctx.user.role_id != 2 || ctx.user.role_id == 1 && ctx.user.ban == 1 || ctx.user.role_id == 2 && ctx.user.ban == 1) {
             return ctx.status = 400
         }
         const town = await Town.create({
-            name: name
+            name: name,
+            region: region,
+            area: area
         })
         ctx.body = town
     } catch (e) {
@@ -55,13 +77,17 @@ router.post('/api/town', authMiddleware, async ctx => {
 })
 
 router.put('/api/town/:id', authMiddleware, async ctx => {
-    const {name} = ctx.request.body
+    const {name, region, area} = ctx.request.body
     try {
         if(ctx.user.role_id != 1 || ctx.user.role_id == 1 && ctx.user.ban == 1) {
             return ctx.status = 400
         }
         const town = await Town.update(
-            {name: name},
+            {
+                name: name,
+                region: region,
+                area: area,
+            },
             {where: {id: ctx.params.id}}
         )
         ctx.body = town

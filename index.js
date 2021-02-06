@@ -18,6 +18,8 @@ const allSelers = require('./routes/allSelers')
 const managerMoney = require('./routes/managerMoney')
 const allMoney = require('./routes/allMoney')
 const clientDebt = require('./routes/clientDebt')
+const region = require('./routes/region')
+const area = require('./routes/area')
 
 const app = new Koa()
 app.use(bodyParser())
@@ -38,6 +40,8 @@ app.use(allSelers.routes())
 app.use(managerMoney.routes())
 app.use(allMoney.routes())
 app.use(clientDebt.routes())
+app.use(region.routes())
+app.use(area.routes())
 
 app.listen(config.PORT, () => {
     console.log(`Serve listening on port: ${config.PORT}`)

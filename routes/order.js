@@ -12,23 +12,73 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
         }
         if(ctx.user.role_id == 1 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT orders.id, orders.order_number, orders.note, orders.comment, orders.car_number, orders.firm, orders.data, DATE_FORMAT(orders.data_create, '%Y-%m-%d') as data_create, orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless, orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless, orders.general_sum, orders.pay_cash, orders.pay_cashless, orders.delta_cashless, orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash, orders.creater, orders.region, orders.debt, orders.client_id, users.login FROM orders 
+                `SELECT orders.id, orders.order_number, orders.note, orders.comment, orders.car_number,
+                orders.firm, orders.data, DATE_FORMAT(orders.data_create, '%Y-%m-%d') as data_create,
+                orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless,
+                orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless,
+                orders.general_sum, orders.pay_cash, orders.pay_cashless, orders.delta_cashless,
+                orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash,
+                orders.creater, orders.region, orders.debt, orders.client_id, users.login
+                FROM orders 
                 LEFT JOIN users ON orders.creater = users.id
                 where client_id = ${client_id}
                 ORDER BY orders.id`
             )
+
+            let prepareOrders = await sequelize.query(
+                `SELECT prepare_orders.id, prepare_orders.comment, prepare_orders.price_cash, prepare_orders.note,
+                 prepare_orders.firm,
+                 prepare_orders.product_name,
+                 DATE_FORMAT(prepare_orders.data_create, '%Y-%m-%d') as data_create,
+                 DATE_FORMAT(prepare_orders.data_create, '%Y-%m-%d') as data,
+                 prepare_orders.count,
+                 prepare_orders.creater, prepare_orders.region, prepare_orders.client_id, users.login
+                 FROM prepare_orders
+                 LEFT JOIN users ON prepare_orders.creater = users.id
+                 WHERE prepare_orders.region = "" && prepare_orders.client_id = ${client_id}
+                 ORDER BY prepare_orders.id`
+            );
+
+            prepareOrders = prepareOrders[0].map((item) => ({
+                isPreparedOrders: true,
+                ...item,
+            }))
+
+            const allOrders = [...order[0], ...prepareOrders]
+
             return ctx.body = {
-                order: order[0],
+                order: allOrders
             }
         } else if(ctx.user.role_id == 2 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, order_number, orders.note, orders.comment, car_number, firm, data, product_name, opt_price, count, delivery_cash, delivery_cashless, region 
+                `SELECT id, order_number, orders.note, orders.comment, car_number, firm, data, 
+                    product_name, opt_price, count, delivery_cash, delivery_cashless, region 
                 FROM orders 
                 where client_id = ${client_id} and firm != ""
                 ORDER BY id`
             )
+
+            let prepareOrders = await sequelize.query(
+                `SELECT prepare_orders.id, prepare_orders.comment, prepare_orders.note,
+                 prepare_orders.firm,
+                 prepare_orders.product_name,
+                 DATE_FORMAT(prepare_orders.data_create, '%Y-%m-%d') as data,
+                 prepare_orders.count,
+                 prepare_orders.region
+                 FROM prepare_orders
+                 WHERE prepare_orders.region = "" && prepare_orders.client_id = ${client_id}
+                 ORDER BY prepare_orders.id`
+            );
+
+            prepareOrders = prepareOrders[0].map((item) => ({
+                isPreparedOrders: true,
+                ...item,
+            }))
+
+            const allOrders = [...order[0], ...prepareOrders]
+
             return ctx.body = {
-                order: order[0]
+                order: allOrders
             }
         } else if(ctx.user.role_id == 3 && ctx.user.ban == 0) {
             const order = await sequelize.query(
@@ -65,13 +115,36 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                 return ctx.status = 400
             }
             const order = await sequelize.query(
-                `SELECT id, firm, note, comment, data, product_name, price_cash, price_cashless, count, sumseller, delivery_cash, delivery_cashless, general_sum, pay_cash, pay_cashless, region 
+                `SELECT id, firm, note, comment, data, product_name, price_cash, price_cashless, 
+                    count, sumseller, delivery_cash, delivery_cashless, general_sum, 
+                    pay_cash, pay_cashless, region 
                 FROM orders 
                 where client_id = ${client_id}
                 ORDER BY id`
             )
+
+
+            let prepareOrders = await sequelize.query(
+                `SELECT prepare_orders.id, prepare_orders.comment, prepare_orders.note,
+                 prepare_orders.firm,
+                 prepare_orders.product_name,
+                 DATE_FORMAT(prepare_orders.data_create, '%Y-%m-%d') as data,
+                 prepare_orders.count,
+                 prepare_orders.region
+                 FROM prepare_orders
+                 WHERE prepare_orders.region = "" && prepare_orders.client_id = ${client_id}
+                 ORDER BY prepare_orders.id`
+            );
+
+            prepareOrders = prepareOrders[0].map((item) => ({
+                isPreparedOrders: true,
+                ...item,
+            }))
+
+            const allOrders = [...order[0], ...prepareOrders]
+
             return ctx.body = {
-                order: order[0],
+                order: allOrders,
                 client: client[0],
                 town: town[0]
             }

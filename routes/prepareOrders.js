@@ -12,16 +12,19 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
         }
         if(ctx.user.role_id == 1 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT prepare_orders.id, prepare_orders.price_cash, prepare_orders.comment, prepare_orders.order_number, prepare_orders.note,
-                 prepare_orders.car_number, prepare_orders.firm, prepare_orders.data, 
+                `SELECT prepare_orders.id, prepare_orders.price_cash, prepare_orders.comment, prepare_orders.note,
+                 prepare_orders.firm, 
                  DATE_FORMAT(prepare_orders.data_create, '%Y-%m-%d') as data_create, 
-                 prepare_orders.product_name, prepare_orders.opt_price,  
-                 prepare_orders.count, prepare_orders.delivery_cash, prepare_orders.delivery_cashless, 
-                 prepare_orders.creater, prepare_orders.region, prepare_orders.client_id, users.login, 
-                 clients.name as clientName, clients.id as clientId
+                 prepare_orders.product_name,  
+                 prepare_orders.count, 
+                 prepare_orders.creater, prepare_orders.client_id, users.login, 
+                 clients.name as clientName, clients.id as clientId,
+                 towns.region as region, towns.name as townName
                  FROM prepare_orders 
                  LEFT JOIN users ON prepare_orders.creater = users.id
                  JOIN clients ON prepare_orders.client_id = clients.id 
+                 JOIN towns ON clients.town_id = towns.id 
+                 WHERE prepare_orders.region = ""
                  ORDER BY prepare_orders.id`
             )
             return ctx.body = {
@@ -29,16 +32,19 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 2 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT prepare_orders.id, prepare_orders.comment, prepare_orders.price_cash, prepare_orders.order_number, prepare_orders.note,
-                 prepare_orders.car_number, prepare_orders.firm, prepare_orders.data,
-                 prepare_orders.product_name, prepare_orders.opt_price,  
+                `SELECT prepare_orders.id, prepare_orders.comment, prepare_orders.price_cash, prepare_orders.note,
+                 prepare_orders.firm,
+                 prepare_orders.product_name,  
                  DATE_FORMAT(prepare_orders.data_create, '%Y-%m-%d') as data_create,
-                 prepare_orders.count, prepare_orders.delivery_cash, prepare_orders.delivery_cashless, 
+                 prepare_orders.count,
                  prepare_orders.creater, prepare_orders.region, prepare_orders.client_id, users.login,
-                 clients.name as clientName, clients.id as clientId
+                 clients.name as clientName, clients.id as clientId,
+                 towns.region as region, towns.name as townName
                  FROM prepare_orders 
                  LEFT JOIN users ON prepare_orders.creater = users.id
                  JOIN clients ON prepare_orders.client_id = clients.id
+                 JOIN towns ON clients.town_id = towns.id
+                 WHERE prepare_orders.region = ""
                  ORDER BY prepare_orders.id`
             )
             return ctx.body = {
@@ -46,16 +52,19 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 3 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT prepare_orders.id, prepare_orders.comment, prepare_orders.price_cash, prepare_orders.order_number, prepare_orders.note,
-                 prepare_orders.firm, prepare_orders.data, prepare_orders.car_number,
-                 prepare_orders.product_name, prepare_orders.opt_price,  
+                `SELECT prepare_orders.id, prepare_orders.comment, prepare_orders.price_cash, prepare_orders.note,
+                 prepare_orders.firm,
+                 prepare_orders.product_name,  
                  DATE_FORMAT(prepare_orders.data_create, '%Y-%m-%d') as data_create,
                  prepare_orders.count,
                  prepare_orders.creater, prepare_orders.region, prepare_orders.client_id, users.login,
-                 clients.name as clientName, clients.id as clientId
+                 clients.name as clientName, clients.id as clientId,
+                 towns.region as region, towns.name as townName
                  FROM prepare_orders 
                  LEFT JOIN users ON prepare_orders.creater = users.id
                  JOIN clients ON prepare_orders.client_id = clients.id
+                 JOIN towns ON clients.town_id = towns.id
+                 WHERE prepare_orders.region = ""
                  ORDER BY prepare_orders.id`
             )
             return ctx.body = {
@@ -63,16 +72,19 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 4 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT prepare_orders.id, prepare_orders.comment, prepare_orders.order_number, prepare_orders.note,
-                 prepare_orders.firm, prepare_orders.data, prepare_orders.car_number,
-                 prepare_orders.product_name, prepare_orders.opt_price,  
+                `SELECT prepare_orders.id, prepare_orders.comment, prepare_orders.note,
+                 prepare_orders.firm,
+                 prepare_orders.product_name,  
                  DATE_FORMAT(prepare_orders.data_create, '%Y-%m-%d') as data_create,
                  prepare_orders.count,
                  prepare_orders.creater, prepare_orders.region, prepare_orders.client_id, users.login,
-                 clients.name as clientName, clients.id as clientId
+                 clients.name as clientName, clients.id as clientId,
+                 towns.region as region, towns.name as townName
                  FROM prepare_orders 
                  LEFT JOIN users ON prepare_orders.creater = users.id
                  JOIN clients ON prepare_orders.client_id = clients.id
+                 JOIN towns ON clients.town_id = towns.id
+                 WHERE prepare_orders.region = ""
                  ORDER BY prepare_orders.id`
             )
             return ctx.body = {
@@ -104,16 +116,18 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
             })
 
             const order = await sequelize.query(
-                `SELECT prepare_orders.id, prepare_orders.comment, prepare_orders.price_cash, prepare_orders.order_number, prepare_orders.note,
-                 prepare_orders.firm, prepare_orders.data,
+                `SELECT prepare_orders.id, prepare_orders.comment, prepare_orders.price_cash, prepare_orders.note,
+                 prepare_orders.firm,
                  DATE_FORMAT(prepare_orders.data_create, '%Y-%m-%d') as data_create,
-                 prepare_orders.product_name, prepare_orders.opt_price,
-                 prepare_orders.count, prepare_orders.car_number,
+                 prepare_orders.product_name,
+                 prepare_orders.count,
                  prepare_orders.creater, prepare_orders.region, prepare_orders.client_id,
-                 clients.name as clientName, clients.id as clientId
+                 clients.name as clientName, clients.id as clientId,
+                 towns.region as region, towns.name as townName
                  FROM prepare_orders
                  JOIN clients ON prepare_orders.client_id = clients.id
-                 WHERE prepare_orders.client_id in (${newClientsList.join()})
+                 JOIN towns ON clients.town_id = towns.id
+                 WHERE prepare_orders.client_id in (${newClientsList.join()}) && prepare_orders.region = ""
                  ORDER BY prepare_orders.id`
             )
 

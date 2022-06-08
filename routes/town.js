@@ -82,7 +82,7 @@ router.put('/api/town/:id', authMiddleware, async ctx => {
         if(ctx.user.role_id != 1 || ctx.user.role_id == 1 && ctx.user.ban == 1) {
             return ctx.status = 400
         }
-        const town = await Town.update(
+         await Town.update(
             {
                 name: name,
                 region: region,
@@ -90,7 +90,12 @@ router.put('/api/town/:id', authMiddleware, async ctx => {
             },
             {where: {id: ctx.params.id}}
         )
-        ctx.body = town
+        ctx.body = {
+            id: Number(ctx.params.id),
+            name,
+            region,
+            area
+        }
     } catch (e) {
         ctx.body = e
     }
@@ -102,11 +107,28 @@ router.put('/api/town/manager/:id', authMiddleware, async ctx => {
         if(ctx.user.role_id != 1 || ctx.user.role_id == 1 && ctx.user.ban == 1) {
             return ctx.status = 400
         }
-        const town = await Town.update(
+        await Town.update(
             {manager_id: manager_id, safemanager_id: safemanager_id, securitymanager_id: securitymanager_id, second_security_manager_id: second_security_manager_id, third_security_manager_id: third_security_manager_id},
             {where: {id: ctx.params.id}}
         )
-        ctx.body = town
+
+        const towns = await sequelize.query(
+            `SELECT * FROM towns where id = ${ctx.params.id}`
+        )
+
+        const {name, region, area} = towns[0][0];
+
+        ctx.body = {
+            id: Number(ctx.params.id),
+            name,
+            region,
+            area,
+            manager_id,
+            safemanager_id,
+            securitymanager_id,
+            second_security_manager_id,
+            third_security_manager_id
+        }
     } catch (e) {
         ctx.body = e
     }

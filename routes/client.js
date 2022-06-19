@@ -24,7 +24,7 @@ router.get('/api/client/:town_id', authMiddleware, async ctx => {
             const orderSum = await sequelize.query(
                 `SELECT clients.id, sum(debt) as sumDebt FROM clients 
                 LEFT JOIN orders ON clients.id = orders.client_id 
-                where clients.town_id = ${town_id}
+                where clients.town_id = ${town_id} and orders.product_name != "Перевірка"
                 GROUP BY clients.id`
             )
             const pithSum = await sequelize.query(
@@ -91,9 +91,10 @@ router.get('/api/clientinfo/:id', authMiddleware, async ctx => {
 router.post('/api/client/:town_id', authMiddleware, async ctx => {
     const {name, phone, shopStreet, shopName, reserveName, reservePhone} = ctx.request.body
     try {
-        if(ctx.user.role_id != 1 && ctx.user.role_id != 2 || ctx.user.ban == 1) {
+        if(ctx.user.role_id != 1 && ctx.user.role_id != 2 && ctx.user.role_id != 5 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
+
         const client = await Client.create({
             name: name, 
             phone: phone, 

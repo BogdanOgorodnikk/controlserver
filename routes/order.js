@@ -36,7 +36,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                  prepare_orders.creater, prepare_orders.region, prepare_orders.client_id, users.login
                  FROM prepare_orders
                  LEFT JOIN users ON prepare_orders.creater = users.id
-                 WHERE prepare_orders.region = "" && prepare_orders.client_id = ${client_id}
+                 WHERE prepare_orders.order_number = "" && prepare_orders.client_id = ${client_id}
                  ORDER BY prepare_orders.id`
             );
 
@@ -67,7 +67,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                  prepare_orders.count,
                  prepare_orders.region
                  FROM prepare_orders
-                 WHERE prepare_orders.region = "" && prepare_orders.client_id = ${client_id}
+                 WHERE prepare_orders.order_number = "" && prepare_orders.client_id = ${client_id}
                  ORDER BY prepare_orders.id`
             );
 
@@ -133,7 +133,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                  prepare_orders.count,
                  prepare_orders.region
                  FROM prepare_orders
-                 WHERE prepare_orders.region = "" && prepare_orders.client_id = ${client_id}
+                 WHERE prepare_orders.order_number = "" && prepare_orders.client_id = ${client_id}
                  ORDER BY prepare_orders.id`
             );
 

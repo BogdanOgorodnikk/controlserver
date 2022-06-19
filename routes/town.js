@@ -70,7 +70,13 @@ router.post('/api/town', authMiddleware, async ctx => {
             region: region,
             area: area
         })
-        ctx.body = town
+
+        const newTown = await sequelize.query(
+            `SELECT * FROM towns
+             where towns.id = ${town.id}`
+        )
+
+        ctx.body = newTown[0][0]
     } catch (e) {
         ctx.body = e
     }

@@ -3,19 +3,37 @@ const router = new Router()
 const Order = require('../models/Order')
 const { sequelize } = require('../database/db')
 const authMiddleware = require('../middleware/auth.middleware')
+const {format} = require("date-fns");
 
 router.get('/api/alldebts', authMiddleware, async ctx => {
     const start = ctx.query.start;
     const end = ctx.query.end;
 
+    let preparedDataStart = "";
+    let preparedDataEnd = "";
+
+    if(start ) {
+        let [startDay, startMonth, startYear] = start?.split(".");
+
+         preparedDataStart = format(new Date(startYear, startMonth - 1, startDay), "yyyy-MM-dd");
+
+    }
+
+    if(end) {
+        let [day, month, year] = end.split(".");
+
+        preparedDataEnd = format(new Date(year, month - 1, day), "yyyy-MM-dd");
+    }
+
+
     let string = '';
 
     if(start && !end) {
-        string = `and DATE(orders.data) >= '${start}'`
+        string = `and DATE(orders.data) >= '${preparedDataStart}'`
     } else if(end && !start) {
-        string = `and DATE(orders.data) <= '${end}'`
+        string = `and DATE(orders.data) <= '${preparedDataEnd}'`
     } else if(start && end) {
-        string = `and DATE(orders.data) BETWEEN '${start}' AND '${end}'`
+        string = `and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
     }
 
     try {

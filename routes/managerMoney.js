@@ -3,6 +3,7 @@ const router = new Router()
 const Order = require('../models/Order')
 const { sequelize } = require('../database/db')
 const authMiddleware = require('../middleware/auth.middleware')
+const {format} = require("date-fns");
 
 router.get('/api/managermoney', authMiddleware, async ctx => {
     try {
@@ -34,7 +35,7 @@ router.get('/api/managermoney/:id', authMiddleware, async ctx => {
             return ctx.status = 400
         }
         const managerMoney = await sequelize.query(
-            `SELECT orders.id, orders.data, orders.comment, DATE_FORMAT(orders.data_create, '%Y-%m-%d %H:%i') as data_create, orders.product_name, 
+            `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create, orders.product_name, 
             orders.client_id, orders.pay_cash, 
             IFNULL(clients.name, '') AS name
             FROM orders 
@@ -57,13 +58,28 @@ router.post('/api/managercheckmoney/:id', authMiddleware, async ctx => {
         if(ctx.user.role_id != 1 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
+
+        let [day, month, year] = data.split(".");
+
+        const preparedData = format(new Date(year, month - 1, day), "yyyy-MM-dd");
+
         const checkmoney = await Order.create({
-            data: data, 
+            data: preparedData,
             product_name: "Перевірка", 
             pay_cash: pay_cash,
             creater: ctx.params.id
         })
-        return ctx.body = checkmoney
+
+        const managerMoney = await sequelize.query(
+            `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create, orders.product_name, 
+            orders.client_id, orders.pay_cash, 
+            IFNULL(clients.name, '') AS name
+            FROM orders 
+            LEFT JOIN clients ON orders.client_id = clients.id
+            where orders.id = ${checkmoney.id}`
+        )
+
+        return ctx.body = managerMoney[0][0]
     }
     catch(e) {
         return ctx.body = e
@@ -81,7 +97,17 @@ router.put('/api/managermoneyedit/:id', authMiddleware, async ctx => {
             debt: 0 - pay_cash},
             {where: {id: ctx.params.id}}
         )
-        return ctx.body = money
+
+        const managerMoney = await sequelize.query(
+            `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create, orders.product_name, 
+            orders.client_id, orders.pay_cash, 
+            IFNULL(clients.name, '') AS name
+            FROM orders 
+            LEFT JOIN clients ON orders.client_id = clients.id
+            where orders.id = ${ctx.params.id}`
+        )
+
+        return ctx.body = managerMoney[0][0]
     } catch (e) {
         return ctx.body = e
     }

@@ -28,7 +28,13 @@ router.post('/api/area', authMiddleware, async ctx => {
         const area = await Area.create({
             name: name
         })
-        return ctx.body = area
+
+        const newArea = await sequelize.query(
+            `SELECT * FROM areas
+            where areas.id = ${area.id}`
+        )
+
+        return ctx.body = newArea[0][0]
     } catch (e) {
         return ctx.body = e
     }
@@ -44,7 +50,13 @@ router.put('/api/area/:id', authMiddleware, async ctx => {
             {name: name},
             {where: {id: ctx.params.id}}
         )
-        return ctx.body = area
+
+        const newArea = await sequelize.query(
+            `SELECT * FROM areas
+            where areas.id = ${ctx.params.id}`
+        )
+
+        return ctx.body = newArea[0][0]
     } catch (e) {
         return ctx.body = e
     }

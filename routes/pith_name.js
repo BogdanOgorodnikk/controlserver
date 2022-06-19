@@ -43,7 +43,13 @@ router.post('/api/pithname', authMiddleware, async ctx => {
         const pith = await Pith_name.create({
             name: name
         })
-        return ctx.body = pith
+
+        const newPithName = await sequelize.query(
+            `SELECT * FROM pith_names
+            where pith_names.id = ${pith.id}`
+        )
+
+        return ctx.body = newPithName[0][0]
     } catch (e) {
         return ctx.body = e
     }
@@ -59,7 +65,13 @@ router.put('/api/pithname/:id', authMiddleware, async ctx => {
             {name: name},
             {where: {id: ctx.params.id}}
         )
-        return ctx.body = pith
+
+        const newPithName = await sequelize.query(
+            `SELECT * FROM pith_names
+            where pith_names.id = ${ctx.params.id}`
+        )
+
+        return ctx.body = newPithName[0][0]
     } catch (e) {
         return ctx.body = e
     }

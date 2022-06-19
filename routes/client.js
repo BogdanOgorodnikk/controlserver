@@ -69,13 +69,16 @@ router.get('/api/allclients', authMiddleware, async ctx => {
 
 router.get('/api/clientinfo/:id', authMiddleware, async ctx => {
     try {
-        if(ctx.user.role_id < 1 || ctx.user.role_id > 5 || ctx.user.ban == 1) {
+        if(ctx.user.role_id < 1 || ctx.user.role_id > 5 || ctx.user.ban === 1) {
             return ctx.status = 400
         }
 
         const client = await sequelize.query(
-            `SELECT * FROM clients
-            WHERE id = ${ctx.params.id}`
+            `SELECT clients.id, clients.name, clients.phone, clients.shop_street, clients.shop_name, 
+             clients.reserve_name, clients.reserve_phone, clients.town_id, towns.name as townName
+             FROM clients
+             LEFT JOIN towns ON clients.town_id = towns.id
+             WHERE clients.id = ${ctx.params.id}`
         )
         return ctx.body = {
             client: client[0]

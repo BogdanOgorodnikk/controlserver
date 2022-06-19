@@ -19,6 +19,21 @@ router.get('/api/firmname', authMiddleware, async ctx => {
     }
 })
 
+router.get('/api/allFirms', authMiddleware, async ctx => {
+    try {
+        if(ctx.user.role_id < 1 || ctx.user.role_id > 5 && ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+        const firms = await sequelize.query(
+            `SELECT * FROM firm_names
+            ORDER BY id`
+        )
+        return ctx.body = firms[0]
+    } catch (e) {
+        return ctx.body = e
+    }
+})
+
 router.post('/api/firmname', authMiddleware, async ctx => {
     const {name} = ctx.request.body
     try {
@@ -28,7 +43,13 @@ router.post('/api/firmname', authMiddleware, async ctx => {
         const firm = await Firm_name.create({
             name: name
         })
-        return ctx.body = firm
+
+        const newFirm = await sequelize.query(
+            `SELECT * FROM firm_names
+            where firm_names.id = ${firm.id}`
+        )
+
+        return ctx.body = newFirm[0][0]
     } catch (e) {
         return ctx.body = e
     }
@@ -44,7 +65,14 @@ router.put('/api/firmname/:id', authMiddleware, async ctx => {
             {name: name},
             {where: {id: ctx.params.id}}
         )
-        return ctx.body = firm
+
+        const newFirm = await sequelize.query(
+            `SELECT * FROM firm_names
+            where firm_names.id = ${ctx.params.id}`
+        )
+
+
+        return ctx.body = newFirm[0][0]
     } catch (e) {
         return ctx.body = e
     }

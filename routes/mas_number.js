@@ -19,6 +19,21 @@ router.get('/api/masnumber', authMiddleware, async ctx => {
     }
 })
 
+router.get('/api/allMas', authMiddleware, async ctx => {
+    try {
+        if(ctx.user.role_id < 1 || ctx.user.role_id > 5 && ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+        const masnumbers = await sequelize.query(
+            `SELECT * FROM mas_numbers
+            ORDER BY id`
+        )
+        return ctx.body = masnumbers[0]
+    } catch (e) {
+        return ctx.body = e
+    }
+})
+
 router.post('/api/masnumber', authMiddleware, async ctx => {
     const {number} = ctx.request.body
     try {
@@ -28,7 +43,13 @@ router.post('/api/masnumber', authMiddleware, async ctx => {
         const masnumber = await Mas_number.create({
             number: number
         })
-        return ctx.body = masnumber
+
+        const newMas = await sequelize.query(
+            `SELECT * FROM mas_numbers
+            where mas_numbers.id = ${masnumber.id}`
+        )
+
+        return ctx.body = newMas[0][0]
     } catch (e) {
         return ctx.body = e
     }
@@ -44,7 +65,13 @@ router.put('/api/masnumber/:id', authMiddleware, async ctx => {
             {number: number},
             {where: {id: ctx.params.id}}
         )
-        return ctx.body = masnumber
+
+        const newMas = await sequelize.query(
+            `SELECT * FROM mas_numbers
+            where mas_numbers.id = ${ctx.params.id}`
+        )
+
+        return ctx.body = newMas[0][0]
     } catch (e) {
         return ctx.body = e
     }

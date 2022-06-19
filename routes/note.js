@@ -43,7 +43,13 @@ router.post('/api/note', authMiddleware, async ctx => {
         const note = await Note.create({
             name: name
         })
-        return ctx.body = note
+
+        const newNote = await sequelize.query(
+            `SELECT * FROM notes
+            where notes.id = ${note.id}`
+        )
+
+        return ctx.body = newNote[0][0]
     } catch (e) {
         return ctx.body = e
     }
@@ -59,7 +65,13 @@ router.put('/api/note/:id', authMiddleware, async ctx => {
             {name: name},
             {where: {id: ctx.params.id}}
         )
-        return ctx.body = note
+
+        const newNote = await sequelize.query(
+            `SELECT * FROM notes
+            where notes.id = ${ctx.params.id}`
+        )
+
+        return ctx.body = newNote[0][0]
     } catch (e) {
         return ctx.body = e
     }

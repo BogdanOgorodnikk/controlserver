@@ -43,7 +43,15 @@ router.post('/api/preparecomment', authMiddleware, async ctx => {
             {where: {id: order_id}}
         )
 
-        return ctx.body = comment
+        const comments = await sequelize.query(
+            `SELECT prepare_order_comments.id, prepare_order_comments.description, prepare_order_comments.creater_id, prepare_order_comments.order_id, prepare_order_comments.data_create,
+                users.login as createrName
+             FROM prepare_order_comments
+             LEFT JOIN users ON prepare_order_comments.creater_id = users.id
+             WHERE prepare_order_comments.id = ${comment.id}`
+        )
+
+        return ctx.body = comments[0][0]
     } catch (e) {
         return ctx.body = e
     }
@@ -61,9 +69,16 @@ router.put('/api/preparecomment', authMiddleware, async ctx => {
             },
             {where: {id: id}}
         )
-        return ctx.body = {
-            comment
-        }
+
+        const comments = await sequelize.query(
+            `SELECT prepare_order_comments.id, prepare_order_comments.description, prepare_order_comments.creater_id, prepare_order_comments.order_id, prepare_order_comments.data_create,
+                users.login as createrName
+             FROM prepare_order_comments
+             LEFT JOIN users ON prepare_order_comments.creater_id = users.id
+             WHERE prepare_order_comments.id = ${id}`
+        )
+
+        return ctx.body = comments[0][0]
     }
     catch(e) {
         return ctx.body = e

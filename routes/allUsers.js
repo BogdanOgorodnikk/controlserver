@@ -30,7 +30,11 @@ router.put('/api/allusers/:id', authMiddleware, async ctx => {
             {role_id, ban},
             {where: {id: ctx.params.id}}
         )
-        ctx.body = user
+        const updatedUser = await sequelize.query(
+            `SELECT id, login, password, role_id, ban FROM users where id = ${ctx.params.id}`
+        )
+
+        ctx.body = updatedUser[0][0]
     } catch (e) {
         ctx.body = e
     }
@@ -48,7 +52,12 @@ router.put('/api/allusers/edit/:id', authMiddleware, async ctx => {
             {login: login, password: hash},
             {where: {id: ctx.params.id}}
         )
-        ctx.body = user
+
+        const updatedUser = await sequelize.query(
+            `SELECT id, login, password, role_id, ban FROM users where id = ${ctx.params.id}`
+        )
+
+        ctx.body = updatedUser[0][0]
     } catch (e) {
         ctx.body = e
     }

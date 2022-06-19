@@ -19,6 +19,21 @@ router.get('/api/optprice', authMiddleware, async ctx => {
     }
 })
 
+router.get('/api/allOptPrices', authMiddleware, async ctx => {
+    try {
+        if(ctx.user.role_id < 1 || ctx.user.role_id > 5 && ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+        const optprices = await sequelize.query(
+            `SELECT * FROM opt_prices
+            ORDER BY id`
+        )
+        return ctx.body = optprices[0]
+    } catch (e) {
+        return ctx.body = e
+    }
+})
+
 router.post('/api/optprice', authMiddleware, async ctx => {
     const {number, firm_name, firm_id} = ctx.request.body
     try {
@@ -30,7 +45,13 @@ router.post('/api/optprice', authMiddleware, async ctx => {
             firm_name: firm_name,
             firm_id: firm_id,
         })
-        return ctx.body = optprice
+
+        const newOptPrice = await sequelize.query(
+            `SELECT * FROM opt_prices
+            where opt_prices.id = ${optprice.id}`
+        )
+
+        return ctx.body = newOptPrice[0][0]
     } catch (e) {
         return ctx.body = e
     }
@@ -50,7 +71,13 @@ router.put('/api/optprice/:id', authMiddleware, async ctx => {
             },
             {where: {id: ctx.params.id}}
         )
-        return ctx.body = optprice
+
+        const newOptPrice = await sequelize.query(
+            `SELECT * FROM opt_prices
+            where opt_prices.id = ${ctx.params.id}`
+        )
+
+        return ctx.body = newOptPrice[0][0]
     } catch (e) {
         return ctx.body = e
     }

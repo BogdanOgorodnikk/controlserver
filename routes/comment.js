@@ -43,7 +43,15 @@ router.post('/api/comment', authMiddleware, async ctx => {
             {where: {id: order_id}}
         )
 
-        return ctx.body = comment
+        const newComment = await sequelize.query(
+            `SELECT comments.id, comments.description, comments.creater_id, comments.order_id, comments.data_create,
+                users.login as createrName
+             FROM comments
+             LEFT JOIN users ON comments.creater_id = users.id
+             WHERE comments.id = ${comment.id}`
+        )
+
+        return ctx.body = newComment[0][0]
     } catch (e) {
         return ctx.body = e
     }
@@ -61,9 +69,16 @@ router.put('/api/comment', authMiddleware, async ctx => {
             },
             {where: {id: id}}
         )
-        return ctx.body = {
-            comment
-        }
+
+        const newComment = await sequelize.query(
+            `SELECT comments.id, comments.description, comments.creater_id, comments.order_id, comments.data_create,
+                users.login as createrName
+             FROM comments
+             LEFT JOIN users ON comments.creater_id = users.id
+             WHERE comments.id = ${id}`
+        )
+
+        return ctx.body = newComment[0][0]
     }
     catch(e) {
         return ctx.body = e

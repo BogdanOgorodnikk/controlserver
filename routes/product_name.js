@@ -19,6 +19,21 @@ router.get('/api/productname', authMiddleware, async ctx => {
     }
 })
 
+router.get('/api/allProducts', authMiddleware, async ctx => {
+    try {
+        if(ctx.user.role_id < 1 || ctx.user.role_id > 5 && ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+        const products = await sequelize.query(
+            `SELECT * FROM product_names
+            ORDER BY id`
+        )
+        return ctx.body = products[0]
+    } catch (e) {
+        return ctx.body = e
+    }
+})
+
 router.post('/api/productname', authMiddleware, async ctx => {
     const {name} = ctx.request.body
     try {
@@ -28,7 +43,13 @@ router.post('/api/productname', authMiddleware, async ctx => {
         const product = await Product_name.create({
             name: name
         })
-        return ctx.body = product
+
+        const newProduct = await sequelize.query(
+            `SELECT * FROM product_names
+            where product_names.id = ${product.id}`
+        )
+
+        return ctx.body = newProduct[0][0]
     } catch (e) {
         return ctx.body = e
     }
@@ -44,7 +65,13 @@ router.put('/api/productname/:id', authMiddleware, async ctx => {
             {name: name},
             {where: {id: ctx.params.id}}
         )
-        return ctx.body = product
+
+        const newProduct = await sequelize.query(
+            `SELECT * FROM product_names
+            where product_names.id = ${ctx.params.id}`
+        )
+
+        return ctx.body = newProduct[0][0]
     } catch (e) {
         return ctx.body = e
     }

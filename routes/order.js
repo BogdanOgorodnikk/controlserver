@@ -14,16 +14,16 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
         if(ctx.user.role_id == 1 && ctx.user.ban == 0) {
             const order = await sequelize.query(
                 `SELECT orders.id, orders.order_number, orders.note, orders.comment, orders.car_number,
-                orders.firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y') as data_create,
-                orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless,
-                orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless,
-                orders.general_sum, orders.pay_cash, orders.pay_cashless, orders.delta_cashless,
-                orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash,
-                orders.creater, orders.region, orders.debt, orders.client_id, users.login
-                FROM orders 
-                LEFT JOIN users ON orders.creater = users.id
-                where client_id = ${client_id}
-                ORDER BY orders.id`
+                    if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y') as data_create,
+                    orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless,
+                    orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless,
+                    orders.general_sum, orders.pay_cash, orders.pay_cashless, orders.delta_cashless,
+                    orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash,
+                    orders.creater, orders.region, orders.debt, orders.client_id, users.login
+                    FROM orders 
+                    LEFT JOIN users ON orders.creater = users.id
+                    where client_id = ${client_id}
+                    ORDER BY orders.id`
             )
 
             let prepareOrders = await sequelize.query(
@@ -55,7 +55,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                 `SELECT id, order_number, orders.note, orders.comment, car_number, firm, DATE_FORMAT(data, '%d.%m.%Y') as data, 
                     product_name, opt_price, count, delivery_cash, delivery_cashless, region 
                 FROM orders 
-                where client_id = ${client_id} and firm != ""
+                where client_id = ${client_id} and firm != "" and orders.pay_cashless = 0
                 ORDER BY id`
             )
 
@@ -83,7 +83,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 3 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, order_number, orders.note, orders.comment, car_number, firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, price_cashless, count, sumseller, delivery_cash, delivery_cashless, pay_cash, pay_cashless, region
+                `SELECT id, order_number, orders.note, orders.comment, car_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, price_cashless, count, sumseller, delivery_cash, delivery_cashless, pay_cash, pay_cashless, region
                 FROM orders 
                 where client_id = ${client_id}
                 ORDER BY id`
@@ -93,7 +93,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 4 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, order_number, orders.note, orders.comment, car_number, firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, delta_mas_cashless, price_cashless, count, delivery_cash, delivery_cashless, pay_cashless, region 
+                `SELECT id, order_number, orders.note, orders.comment, car_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, delta_mas_cashless, price_cashless, count, delivery_cash, delivery_cashless, pay_cashless, region 
                 FROM orders 
                 where client_id = ${client_id}
                 ORDER BY id`
@@ -116,7 +116,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                 return ctx.status = 400
             }
             const order = await sequelize.query(
-                `SELECT id, firm, note, comment, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, price_cash, price_cashless, 
+                `SELECT id, if(orders.pay_cashless = 0, orders.firm, "") as firm, note, comment, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, price_cash, price_cashless, 
                     count, sumseller, delivery_cash, delivery_cashless, general_sum, 
                     pay_cash, pay_cashless, region 
                 FROM orders 
@@ -283,7 +283,7 @@ router.post('/api/orders/:client_id', authMiddleware, async ctx => {
 })
 
 router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
-    const {data, product_name, pay_cash, pay_cashless} = ctx.request.body;
+    const {data, product_name, pay_cash, pay_cashless, firm, replaceClient} = ctx.request.body;
 
     let order = "";
 
@@ -296,15 +296,40 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
         const preparedData = format(new Date(year, month - 1, day), "yyyy-MM-dd");
 
         if(ctx.user.role_id == 1) {
-            order = await Order.create({
-                data: preparedData,
-                product_name: product_name,
-                pay_cash: pay_cash,
-                pay_cashless: pay_cashless,
-                debt: 0 - pay_cash - pay_cashless,
-                client_id: ctx.params.client_id,
-                creater: ctx.user.id
-            })
+            if(replaceClient) {
+                await Order.create({
+                    data: preparedData,
+                    product_name: product_name,
+                    pay_cash: pay_cash * -1,
+                    pay_cashless: pay_cashless * -1,
+                    debt: 0 + pay_cash + pay_cashless,
+                    firm: firm,
+                    client_id: replaceClient,
+                    creater: ctx.user.id
+                })
+
+                order = await Order.create({
+                    data: preparedData,
+                    product_name: product_name,
+                    pay_cash: pay_cash,
+                    pay_cashless: pay_cashless,
+                    debt: 0 - pay_cash - pay_cashless,
+                    firm: firm,
+                    client_id: ctx.params.client_id,
+                    creater: ctx.user.id
+                })
+            } else {
+                order = await Order.create({
+                    data: preparedData,
+                    product_name: product_name,
+                    pay_cash: pay_cash,
+                    pay_cashless: pay_cashless,
+                    debt: 0 - pay_cash - pay_cashless,
+                    firm: firm,
+                    client_id: ctx.params.client_id,
+                    creater: ctx.user.id
+                })
+            }
         } else if (ctx.user.role_id == 3) {
             order = await Order.create({
                 data: preparedData,
@@ -320,6 +345,7 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
                 product_name: product_name,
                 pay_cashless: pay_cashless,
                 debt: 0 - pay_cashless,
+                firm: firm,
                 client_id: ctx.params.client_id,
                 creater: ctx.user.id
             })
@@ -333,9 +359,19 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
             if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id) {
                 return ctx.status = 400
             }
+
+            await Order.create({
+                data: preparedData,
+                product_name: product_name,
+                pay_cash: pay_cash * -1,
+                debt: pay_cash,
+                client_id: replaceClient,
+                creater: ctx.user.id
+            })
+
             order = await Order.create({
                 data: preparedData,
-                product_name: "Оплата",
+                product_name: product_name,
                 pay_cash: pay_cash,
                 debt: 0 - pay_cash,
                 client_id: ctx.params.client_id,
@@ -345,7 +381,7 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
 
         const createdOrder = await sequelize.query(
             `SELECT orders.id, orders.order_number, orders.note, orders.comment, orders.car_number,
-                orders.firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y') as data_create,
+                if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y') as data_create,
                 orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless,
                 orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless,
                 orders.general_sum, orders.pay_cash, orders.pay_cashless, orders.delta_cashless,
@@ -576,7 +612,7 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
 })
 
 router.put('/api/editpaymoney/:id', authMiddleware, async ctx => {
-    const {data, product_name, pay_cash, pay_cashless} = ctx.request.body
+    const {data, product_name, pay_cash, pay_cashless, clientId, firm} = ctx.request.body
     try {
         if(ctx.user.role_id !=1 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -592,14 +628,16 @@ router.put('/api/editpaymoney/:id', authMiddleware, async ctx => {
                 product_name: product_name,
                 pay_cash: pay_cash,
                 pay_cashless: pay_cashless,
-                debt: 0 - pay_cash - pay_cashless
+                debt: 0 - pay_cash - pay_cashless,
+                client_id: clientId,
+                firm: firm,
             },
             {where: {id: ctx.params.id}}
         )
 
         const newOrder = await sequelize.query(
             `SELECT orders.id, orders.order_number, orders.note, orders.comment, orders.car_number,
-                orders.firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y') as data_create,
+                if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y') as data_create,
                 orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless,
                 orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless,
                 orders.general_sum, orders.pay_cash, orders.pay_cashless, orders.delta_cashless,

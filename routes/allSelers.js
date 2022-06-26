@@ -31,7 +31,7 @@ router.get('/api/allselers', authMiddleware, async ctx => {
                 LEFT JOIN clients ON orders.client_id = clients.id 
                 JOIN users ON orders.creater = users.id
                 JOIN towns ON clients.town_id = towns.id
-                where firm != "" and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
+                where firm != "" and pay_cashless = 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY orders.id`
             )
             return ctx.body = {
@@ -45,7 +45,7 @@ router.get('/api/allselers', authMiddleware, async ctx => {
                 orders.region, orders.client_id, clients.name
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 
-                where firm != "" and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
+                where firm != "" and pay_cashless = 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY orders.id`
             )
             return ctx.body = {
@@ -55,7 +55,7 @@ router.get('/api/allselers', authMiddleware, async ctx => {
             const allSelers = await sequelize.query(
                 `SELECT orders.id, orders.note, orders.comment, orders.order_number, orders.car_number, orders.firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless, orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless, orders.pay_cash, orders.pay_cashless, orders.region, orders.client_id, clients.name FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 
-                where firm != "" and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
+                where firm != "" and pay_cashless = 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY orders.id`
             )
             return ctx.body = {
@@ -65,7 +65,7 @@ router.get('/api/allselers', authMiddleware, async ctx => {
             const allSelers = await sequelize.query(
                 `SELECT orders.id, orders.note, orders.comment, orders.order_number, orders.car_number, orders.firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless, orders.count, orders.delivery_cash, orders.delivery_cashless, orders.pay_cashless, orders.region, orders.client_id, orders.delta_mas_cashless, clients.name FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 
-                where firm != "" and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
+                where firm != "" and pay_cashless = 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY orders.id`
             )
             return ctx.body = {
@@ -79,7 +79,7 @@ router.get('/api/allselers', authMiddleware, async ctx => {
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 
                 JOIN towns ON clients.town_id = towns.id 
-                where (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id}) and firm != "" and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
+                where (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id}) and firm != "" and pay_cashless = 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY orders.id`
             )
             return ctx.body = {

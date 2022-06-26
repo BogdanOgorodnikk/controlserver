@@ -52,16 +52,20 @@ router.get('/api/client/:town_id', authMiddleware, async ctx => {
 
 router.get('/api/allclients', authMiddleware, async ctx => {
     try {
-        if(ctx.user.role_id != 1 || ctx.user.ban == 1) {
+        if(ctx.user.role_id != 1 && ctx.user.role_id != 5 || ctx.user.ban == 1) {
             return ctx.status = 400
-        } 
-        const clients = await sequelize.query(
-            `SELECT id, name FROM clients
-            ORDER BY id`
-        )
-        return ctx.body = {
-            clients: clients[0]
         }
+
+            const clients = await sequelize.query(
+                `SELECT id, name FROM clients
+            ORDER BY id`
+            )
+            return ctx.body = {
+                clients: clients[0]
+            }
+
+
+
     } catch (e) {
         ctx.body = e
     }

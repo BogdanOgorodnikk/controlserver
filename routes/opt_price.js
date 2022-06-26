@@ -10,8 +10,18 @@ router.get('/api/optprice', authMiddleware, async ctx => {
             return ctx.status = 400
         }
         const optprices = await sequelize.query(
-            `SELECT * FROM opt_prices
-            ORDER BY id`
+            `SELECT opt_prices.id, opt_prices.number, opt_prices.firm_name, opt_prices.firm_id,
+            product_names.name as productName, opt_prices.product_id as productId
+            FROM opt_prices
+            JOIN product_names ON opt_prices.product_id = product_names.id
+            
+            UNION
+            
+            SELECT opt_prices.id, opt_prices.number, opt_prices.firm_name, opt_prices.firm_id,
+            '-' as productName
+            FROM opt_prices
+            WHERE opt_prices.product_id = 0
+            `
         )
         return ctx.body = optprices[0]
     } catch (e) {
@@ -25,8 +35,18 @@ router.get('/api/allOptPrices', authMiddleware, async ctx => {
             return ctx.status = 400
         }
         const optprices = await sequelize.query(
-            `SELECT * FROM opt_prices
-            ORDER BY id`
+            `SELECT opt_prices.id, opt_prices.number, opt_prices.firm_name, opt_prices.firm_id,
+            product_names.name as productName, opt_prices.product_id as productId
+            FROM opt_prices
+            JOIN product_names ON opt_prices.product_id = product_names.id
+            
+            UNION
+            
+            SELECT opt_prices.id, opt_prices.number, opt_prices.firm_name, opt_prices.firm_id,
+            '-' as productName, opt_prices.product_id as productId
+            FROM opt_prices
+            WHERE opt_prices.product_id = 0
+            `
         )
         return ctx.body = optprices[0]
     } catch (e) {
@@ -35,7 +55,7 @@ router.get('/api/allOptPrices', authMiddleware, async ctx => {
 })
 
 router.post('/api/optprice', authMiddleware, async ctx => {
-    const {number, firm_name, firm_id} = ctx.request.body
+    const {number, firm_name, firm_id, product_id} = ctx.request.body
     try {
         if(ctx.user.role_id !=1 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -44,10 +64,14 @@ router.post('/api/optprice', authMiddleware, async ctx => {
             number: number,
             firm_name: firm_name,
             firm_id: firm_id,
+            product_id,
         })
 
         const newOptPrice = await sequelize.query(
-            `SELECT * FROM opt_prices
+            `SELECT opt_prices.id, opt_prices.number, opt_prices.firm_name, opt_prices.firm_id,
+            product_names.name as productName, opt_prices.product_id as productId
+            FROM opt_prices
+            JOIN product_names ON opt_prices.product_id = product_names.id
             where opt_prices.id = ${optprice.id}`
         )
 
@@ -58,7 +82,7 @@ router.post('/api/optprice', authMiddleware, async ctx => {
 })
 
 router.put('/api/optprice/:id', authMiddleware, async ctx => {
-    const {number, firm_name, firm_id} = ctx.request.body
+    const {number, firm_name, firm_id, product_id} = ctx.request.body
     try {
         if(ctx.user.role_id !=1 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -68,12 +92,18 @@ router.put('/api/optprice/:id', authMiddleware, async ctx => {
                 number: number,
                 firm_name: firm_name,
                 firm_id: firm_id,
+                product_id,
             },
             {where: {id: ctx.params.id}}
         )
 
+
+
         const newOptPrice = await sequelize.query(
-            `SELECT * FROM opt_prices
+            `SELECT opt_prices.id, opt_prices.number, opt_prices.firm_name, opt_prices.firm_id,
+            product_names.name as productName, opt_prices.product_id as productId
+            FROM opt_prices
+            JOIN product_names ON opt_prices.product_id = product_names.id
             where opt_prices.id = ${ctx.params.id}`
         )
 

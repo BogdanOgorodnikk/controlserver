@@ -2,24 +2,21 @@ const Sequelize = require('sequelize')
 const db = require('../database/db')
 
 module.exports = db.sequelize.define(
-    'opt_prices', 
+    'client_prices',
     {
         id: {
             type: Sequelize.INTEGER,
             primaryKey: true,
             autoIncrement: true
         },
-        number: {
+        price: {
             type: Sequelize.STRING
         },
-        firm_name: {
-            type: Sequelize.STRING
+        clientId: {
+            type: Sequelize.INTEGER,
         },
-        firm_id: {
-            type: Sequelize.INTEGER
-        },
-        product_id: {
-            type: Sequelize.INTEGER
+        productId: {
+            type: Sequelize.INTEGER,
         },
     },
     {

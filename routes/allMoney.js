@@ -64,10 +64,10 @@ router.get('/api/cashlessmoney', authMiddleware, async ctx => {
         }
         if(ctx.user.role_id === 1 || ctx.user.role_id === 3 || ctx.user.role_id === 4) {
             const cashlessmoneys = await sequelize.query(
-                `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create, orders.creater, orders.client_id, orders.product_name, orders.pay_cashless, clients.name, users.login FROM orders
+                `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.firm, orders.comment, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create, orders.creater, orders.client_id, orders.product_name, orders.pay_cashless, clients.name, users.login FROM orders
                 LEFT JOIN clients ON orders.client_id = clients.id
                 JOIN users ON orders.creater = users.id 
-                WHERE firm = "" and pay_cashless != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
+                WHERE pay_cashless != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY orders.id`
             )
             return ctx.body = {
@@ -75,7 +75,7 @@ router.get('/api/cashlessmoney', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id === 5) {
             const cashlessmoneys = await sequelize.query(
-                `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment, orders.creater, orders.client_id, orders.product_name, 
+                `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.firm, orders.comment, orders.creater, orders.client_id, orders.product_name, 
                  orders.pay_cashless, clients.name, users.login 
                 FROM orders
                 LEFT JOIN clients ON orders.client_id = clients.id

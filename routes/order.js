@@ -360,14 +360,18 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
                 return ctx.status = 400
             }
 
-            await Order.create({
-                data: preparedData,
-                product_name: product_name,
-                pay_cash: pay_cash * -1,
-                debt: pay_cash,
-                client_id: replaceClient,
-                creater: ctx.user.id
-            })
+            if(replaceClient) {
+                await Order.create({
+                    data: preparedData,
+                    product_name: product_name,
+                    pay_cash: pay_cash * -1,
+                    debt: pay_cash,
+                    client_id: replaceClient,
+                    creater: ctx.user.id
+                })
+            }
+
+
 
             order = await Order.create({
                 data: preparedData,

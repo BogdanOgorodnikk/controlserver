@@ -4,6 +4,7 @@ const Order = require('../models/Order')
 const { sequelize } = require('../database/db')
 const authMiddleware = require('../middleware/auth.middleware')
 const {format} = require("date-fns");
+const Comment = require("../models/Comment");
 
 router.get('/api/orders/:client_id', authMiddleware, async ctx => {
     const client_id = ctx.params.client_id
@@ -116,10 +117,12 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                 return ctx.status = 400
             }
             const order = await sequelize.query(
-                `SELECT id, if(orders.pay_cashless = 0, orders.firm, "") as firm, note, comment, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, price_cash, price_cashless, 
-                    count, sumseller, delivery_cash, delivery_cashless, general_sum, 
-                    pay_cash, pay_cashless, region 
+                `SELECT orders.id, if(orders.pay_cashless = 0, orders.firm, "") as firm, orders.note, orders.comment,
+                    DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.price_cash, orders.price_cashless, 
+                    orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless, orders.general_sum, 
+                    orders.pay_cash, orders.pay_cashless, orders.region, users.login
                 FROM orders 
+                LEFT JOIN users ON orders.creater = users.id
                 where client_id = ${client_id}
                 ORDER BY id`
             )
@@ -283,7 +286,7 @@ router.post('/api/orders/:client_id', authMiddleware, async ctx => {
 })
 
 router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
-    const {data, product_name, pay_cash, pay_cashless, firm, replaceClient} = ctx.request.body;
+    const {data, product_name, pay_cash, pay_cashless, firm, replaceClient, description} = ctx.request.body;
 
     let order = "";
 
@@ -296,21 +299,45 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
         const preparedData = format(new Date(year, month - 1, day), "yyyy-MM-dd");
 
         if(ctx.user.role_id == 1) {
+            let replaceToClient = "";
+
             if(replaceClient) {
-                await Order.create({
+                const replaceClientName = await sequelize.query(
+                    `SELECT name
+                    FROM clients
+                    where clients.id = ${ctx.params.client_id}`);
+
+                replaceToClient = await sequelize.query(
+                    `SELECT name
+                    FROM clients
+                    where clients.id = ${replaceClient}`);
+
+                const replacedOrder = await Order.create({
                     data: preparedData,
-                    product_name: product_name,
+                    product_name: `${product_name} від ${replaceClientName[0][0].name}`,
                     pay_cash: pay_cash * -1,
                     pay_cashless: pay_cashless * -1,
                     debt: 0 + pay_cash + pay_cashless,
                     firm: firm,
                     client_id: replaceClient,
-                    creater: ctx.user.id
+                    creater: ctx.user.id,
+                    comment: !!description,
                 })
+
+                if(description) {
+                    await Comment.create({
+                        description: description,
+                        order_id: replacedOrder.id,
+                        creater_id: ctx.user.id
+                    })
+                }
+
+
+            }
 
                 order = await Order.create({
                     data: preparedData,
-                    product_name: product_name,
+                    product_name: replaceClient ? `${product_name} на ${replaceToClient[0][0].name}` : product_name,
                     pay_cash: pay_cash,
                     pay_cashless: pay_cashless,
                     debt: 0 - pay_cash - pay_cashless,
@@ -318,18 +345,7 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
                     client_id: ctx.params.client_id,
                     creater: ctx.user.id
                 })
-            } else {
-                order = await Order.create({
-                    data: preparedData,
-                    product_name: product_name,
-                    pay_cash: pay_cash,
-                    pay_cashless: pay_cashless,
-                    debt: 0 - pay_cash - pay_cashless,
-                    firm: firm,
-                    client_id: ctx.params.client_id,
-                    creater: ctx.user.id
-                })
-            }
+
         } else if (ctx.user.role_id == 3) {
             order = await Order.create({
                 data: preparedData,
@@ -360,22 +376,43 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
                 return ctx.status = 400
             }
 
+            let replaceToClient = "";
+
             if(replaceClient) {
-                await Order.create({
+                const replaceClientName = await sequelize.query(
+                    `SELECT name
+                    FROM clients
+                    where clients.id = ${ctx.params.client_id}`);
+
+                replaceToClient = await sequelize.query(
+                    `SELECT name
+                    FROM clients
+                    where clients.id = ${replaceClient}`);
+
+                const replacedOrder = await Order.create({
                     data: preparedData,
-                    product_name: product_name,
+                    product_name: `${product_name} від ${replaceClientName[0][0].name}`,
                     pay_cash: pay_cash * -1,
                     debt: pay_cash,
                     client_id: replaceClient,
-                    creater: ctx.user.id
+                    creater: ctx.user.id,
+                    comment: !!description
                 })
+
+                if(description) {
+                    await Comment.create({
+                        description: description,
+                        order_id: replacedOrder.id,
+                        creater_id: ctx.user.id
+                    })
+                }
             }
 
 
 
             order = await Order.create({
                 data: preparedData,
-                product_name: product_name,
+                product_name: replaceClient ? `${product_name} на ${replaceToClient[0][0].name}` : product_name,
                 pay_cash: pay_cash,
                 debt: 0 - pay_cash,
                 client_id: ctx.params.client_id,

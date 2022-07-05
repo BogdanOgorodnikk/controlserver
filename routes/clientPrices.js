@@ -11,9 +11,11 @@ router.get('/api/allClientPrices', authMiddleware, async ctx => {
         }
         const prices = await sequelize.query(
             `SELECT client_prices.id, client_prices.price, client_prices.clientId,
-             clients.name as clientName, product_names.name as productName, client_prices.productId
+             clients.name as clientName, product_names.name as productName, client_prices.productId,
+             towns.name as townName, towns.region
             FROM client_prices
             JOIN clients ON client_prices.clientId = clients.id
+            JOIN towns ON clients.town_id = towns.id
             JOIN product_names ON client_prices.productId = product_names.id
             ORDER BY id`
         )

@@ -81,7 +81,7 @@ router.get('/api/cashlessmoney', authMiddleware, async ctx => {
                 LEFT JOIN clients ON orders.client_id = clients.id
                 JOIN users ON orders.creater = users.id 
                 JOIN towns ON clients.town_id = towns.id 
-                WHERE (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id}) and firm = "" and pay_cashless != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
+                WHERE (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id}) and pay_cashless != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY orders.id`
             )
             return ctx.body = {

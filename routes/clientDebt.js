@@ -63,7 +63,8 @@ router.get('/api/alldebts', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 4) {
             const debts = await sequelize.query(
-                `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name, towns.name as townName, towns.region, towns.area  
+                `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name,
+                 towns.name as townName, towns.region, towns.area 
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id
                 JOIN towns ON clients.town_id = towns.id

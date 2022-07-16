@@ -15,7 +15,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
         if(ctx.user.role_id == 1 && ctx.user.ban == 0) {
             const order = await sequelize.query(
                 `SELECT orders.id, orders.order_number, orders.note, orders.comment, orders.car_number,
-                    if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y') as data_create,
+                    if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create,
                     orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless,
                     orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless,
                     orders.general_sum, orders.pay_cash, orders.pay_cashless, orders.delta_cashless,

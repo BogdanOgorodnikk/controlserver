@@ -6,13 +6,13 @@ const authMiddleware = require('../middleware/auth.middleware')
 
 router.get('/api/allClientPrices', authMiddleware, async ctx => {
     try {
-        if(ctx.user.role_id !=1 || ctx.user.ban == 1) {
+        if(ctx.user.role_id !=1  && ctx.user.role_id != 4 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
         const prices = await sequelize.query(
             `SELECT client_prices.id, client_prices.price, client_prices.clientId,
              clients.name as clientName, product_names.name as productName, client_prices.productId,
-             towns.name as townName, towns.region
+             client_prices.note, towns.name as townName, towns.region
             FROM client_prices
             JOIN clients ON client_prices.clientId = clients.id
             JOIN towns ON clients.town_id = towns.id
@@ -45,7 +45,7 @@ router.get('/api/clientPrices/:clientId', authMiddleware, async ctx => {
 })
 
 router.post('/api/allClientPrices', authMiddleware, async ctx => {
-    const {price, clientId, productId} = ctx.request.body
+    const {price, clientId, productId, note} = ctx.request.body
 
     try {
         if(ctx.user.role_id !=1 || ctx.user.ban == 1) {
@@ -55,13 +55,15 @@ router.post('/api/allClientPrices', authMiddleware, async ctx => {
             price: price,
             clientId,
             productId,
+            note
         })
 
         const newPrice = await sequelize.query(
-            `SELECT client_prices.id, client_prices.price, client_prices.clientId,
-             clients.name as clientName, product_names.name as productName, client_prices.productId
+            `SELECT client_prices.id, client_prices.price, client_prices.clientId, client_prices.note,
+             clients.name as clientName, product_names.name as productName, client_prices.productId, towns.name as townName, towns.region
             FROM client_prices
             JOIN clients ON client_prices.clientId = clients.id
+            JOIN towns ON clients.town_id = towns.id
             JOIN product_names ON client_prices.productId = product_names.id
             where client_prices.id = ${prices.id}`
         )
@@ -73,21 +75,22 @@ router.post('/api/allClientPrices', authMiddleware, async ctx => {
 })
 
 router.put('/api/allClientPrices/:id', authMiddleware, async ctx => {
-    const {price, productId} = ctx.request.body
+    const {price, productId, note} = ctx.request.body
     try {
         if(ctx.user.role_id !=1 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
         const firm = await Client_prices.update(
-            {price: price, productId},
+            {price: price, productId, note},
             {where: {id: ctx.params.id}}
         )
 
         const newFirm = await sequelize.query(
-            `SELECT client_prices.id, client_prices.price, client_prices.clientId,
-             clients.name as clientName, product_names.name as productName, client_prices.productId
+            `SELECT client_prices.id, client_prices.price, client_prices.clientId, client_prices.note,
+             clients.name as clientName, product_names.name as productName, client_prices.productId, towns.name as townName, towns.region
             FROM client_prices
             JOIN clients ON client_prices.clientId = clients.id
+            JOIN towns ON clients.town_id = towns.id
             JOIN product_names ON client_prices.productId = product_names.id
             where client_prices.id = ${ctx.params.id}`
         )

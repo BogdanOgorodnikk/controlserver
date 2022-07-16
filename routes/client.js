@@ -117,7 +117,7 @@ router.post('/api/client/:town_id', authMiddleware, async ctx => {
 router.put('/api/client/:client_id', authMiddleware, async ctx => {
     const {name, phone, shopStreet, shopName, reserveName, reservePhone} = ctx.request.body
     try {
-        if(ctx.user.role_id != 1 && ctx.user.role_id != 2 && ctx.user.role_id !=5 || ctx.user.ban == 1) {
+        if(ctx.user.role_id != 1 && ctx.user.role_id != 2 && ctx.user.role_id != 4 && ctx.user.role_id !=5 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
         const townManagers = await sequelize.query(

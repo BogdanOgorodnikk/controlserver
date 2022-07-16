@@ -18,6 +18,9 @@ module.exports = db.sequelize.define(
         productId: {
             type: Sequelize.INTEGER,
         },
+        note: {
+            type: Sequelize.STRING,
+        },
     },
     {
         timestamps: false

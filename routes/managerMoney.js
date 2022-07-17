@@ -36,11 +36,10 @@ router.get('/api/managermoney/:id', authMiddleware, async ctx => {
         }
         const managerMoney = await sequelize.query(
             `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create, orders.product_name, 
-            orders.client_id, orders.pay_cash, towns.name as townName, towns.region, 
+            orders.client_id, orders.pay_cash,
             IFNULL(clients.name, '') AS name
             FROM orders 
             LEFT JOIN clients ON orders.client_id = clients.id
-            JOIN towns on clients.town_id = towns.id
             where (creater = ${id} and orders.product_name != "Перевірка") or (creater = ${id} and orders.product_name = "Перевірка" and orders.client_id = 0)
             ORDER BY orders.id`
         )
@@ -72,8 +71,9 @@ router.post('/api/managercheckmoney/:id', authMiddleware, async ctx => {
         })
 
         const managerMoney = await sequelize.query(
-            `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create, orders.product_name, 
-            orders.client_id, orders.pay_cash, 
+            `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment,
+            DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create, orders.product_name, 
+            orders.client_id, orders.pay_cash,
             IFNULL(clients.name, '') AS name
             FROM orders 
             LEFT JOIN clients ON orders.client_id = clients.id

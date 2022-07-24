@@ -27,6 +27,12 @@ module.exports = db.sequelize.define(
         reserve_phone: {
             type: Sequelize.STRING
         },
+        coefCash: {
+            type: Sequelize.FLOAT
+        },
+        coefCashless: {
+            type: Sequelize.FLOAT
+        },
         town_id: {
             type: Sequelize.INTEGER,
             references: {

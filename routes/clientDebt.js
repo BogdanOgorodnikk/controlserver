@@ -42,7 +42,12 @@ router.get('/api/alldebts', authMiddleware, async ctx => {
         }
         if(ctx.user.role_id == 1) {
             const debts = await sequelize.query(
-                `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name, towns.name as townName, towns.region, towns.area  
+                `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name, towns.name as townName,
+                 towns.region, towns.area, clients.coefCash, clients.coefCashless,
+                 sum(case when orders.note = 'Ф1' then orders.general_sum end) as cash1,
+                 sum(case when orders.note = 'Ф1 ОПТ' then orders.general_sum end) as cash2,
+                 sum(case when orders.note = 'Ф1  ОПТ самовивіз' then orders.general_sum end) as cash3,
+                 sum(orders.pay_cash) as cashMon
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id
                 JOIN towns ON clients.town_id = towns.id
@@ -64,10 +69,15 @@ router.get('/api/alldebts', authMiddleware, async ctx => {
         } else if(ctx.user.role_id == 4) {
             const debts = await sequelize.query(
                 `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name,
-                 towns.name as townName, towns.region, towns.area 
+                 towns.name as townName, towns.region, towns.area, clients.coefCash, clients.coefCashless,
+                 sum(case when orders.note = 'Ф1' then orders.general_sum end) as cash1,
+                 sum(case when orders.note = 'Ф1 ОПТ' then orders.general_sum end) as cash2,
+                 sum(case when orders.note = 'Ф1  ОПТ самовивіз' then orders.general_sum end) as cash3,
+                 sum(orders.pay_cash) as cashMon
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id
                 JOIN towns ON clients.town_id = towns.id
+                WHERE orders.product_name != "Перевірка"
                 GROUP BY clients.id
                 `
             )
@@ -76,11 +86,15 @@ router.get('/api/alldebts', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 5) {
             const debts = await sequelize.query(
-                `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name, towns.manager_id, towns.safemanager_id, towns.securitymanager_id, towns.second_security_manager_id, towns.third_security_manager_id, towns.name as townName, towns.region, towns.area 
+                `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name, towns.manager_id, towns.safemanager_id, towns.securitymanager_id, towns.second_security_manager_id, towns.third_security_manager_id, towns.name as townName, towns.region, towns.area,
+                 sum(case when orders.note = 'Ф1' then orders.general_sum end) as cash1,
+                 sum(case when orders.note = 'Ф1 ОПТ' then orders.general_sum end) as cash2,
+                 sum(case when orders.note = 'Ф1  ОПТ самовивіз' then orders.general_sum end) as cash3,
+                 sum(orders.pay_cash) as cashMon, clients.coefCash, clients.coefCashless
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id
                 JOIN towns ON clients.town_id = towns.id
-                where  towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id}
+                where  orders.product_name != "Перевірка" and (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id})
                 GROUP BY clients.id
                 `
             )

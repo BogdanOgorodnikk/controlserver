@@ -568,9 +568,13 @@ router.put('/api/pricecashless/:id', authMiddleware, async ctx => {
         )
 
         const newOrder = await sequelize.query(
-            `SELECT id, order_number, orders.note, orders.comment, car_number, firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, delta_mas_cashless, price_cashless, count, delivery_cash, delivery_cashless, pay_cashless, region 
-                FROM orders 
-                where id = ${ctx.params.id} `
+            `SELECT orders.id, orders.order_number, orders.note, orders.comment, orders.car_number, orders.firm,
+              DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.opt_price, orders.price_cash,
+              orders.delta_mas_cashless, orders.price_cashless, orders.count, orders.delivery_cash, orders.delivery_cashless,
+              orders.pay_cashless, orders.region, clients.name
+             FROM orders 
+             LEFT JOIN clients ON orders.client_id = clients.id
+             where orders.id = ${ctx.params.id}`
         )
 
         return ctx.body = newOrder[0][0]

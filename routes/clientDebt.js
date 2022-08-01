@@ -68,9 +68,7 @@ router.get('/api/alldebts', authMiddleware, async ctx => {
             const debts = await sequelize.query(
                 `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name,
                  towns.name as townName, towns.region, towns.area, clients.coefCash, clients.coefCashless,
-                 sum(case when orders.note = 'Ф1' then orders.general_sum end) as cash1,
-                 sum(case when orders.note = 'Ф1 ОПТ' then orders.general_sum end) as cash2,
-                 sum(case when orders.note = 'Ф1  ОПТ самовивіз' then orders.general_sum end) as cash3,
+                 sum(case when orders.note RLIKE('^Ф1') then orders.general_sum end) as genSumCash,
                  sum(orders.pay_cash) as cashMon
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id
@@ -85,9 +83,7 @@ router.get('/api/alldebts', authMiddleware, async ctx => {
         } else if(ctx.user.role_id == 5) {
             const debts = await sequelize.query(
                 `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name, towns.manager_id, towns.safemanager_id, towns.securitymanager_id, towns.second_security_manager_id, towns.third_security_manager_id, towns.name as townName, towns.region, towns.area,
-                 sum(case when orders.note = 'Ф1' then orders.general_sum end) as cash1,
-                 sum(case when orders.note = 'Ф1 ОПТ' then orders.general_sum end) as cash2,
-                 sum(case when orders.note = 'Ф1  ОПТ самовивіз' then orders.general_sum end) as cash3,
+                 sum(case when orders.note RLIKE('^Ф1') then orders.general_sum end) as genSumCash,
                  sum(orders.pay_cash) as cashMon, clients.coefCash, clients.coefCashless
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id

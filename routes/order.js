@@ -94,7 +94,10 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 4 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, order_number, orders.note, orders.comment, car_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, delta_mas_cashless, price_cashless, count, delivery_cash, delivery_cashless, pay_cashless, region 
+                `SELECT id, order_number, orders.note, orders.comment, car_number,
+                if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data,
+                product_name, opt_price, price_cash, delta_mas_cashless, price_cashless, count,
+                delivery_cash, delivery_cashless, pay_cashless, region, general_sum, pay_cash
                 FROM orders 
                 where client_id = ${client_id}
                 ORDER BY id`
@@ -161,7 +164,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
 router.get('/api/suminfo/:client_id', authMiddleware, async ctx => {
     const client_id = ctx.params.client_id
     try {
-        if(ctx.user.role_id !=1 && ctx.user.role_id !=3 && ctx.user.role_id != 5 || ctx.user.ban == 1) {
+        if(ctx.user.role_id !=1 && ctx.user.role_id !=3 && ctx.user.role_id != 5 && ctx.user.role_id != 4 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
         const sumMas = await sequelize.query(

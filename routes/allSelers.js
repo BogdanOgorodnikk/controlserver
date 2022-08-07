@@ -73,7 +73,7 @@ router.get('/api/allselers', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 5 && ctx.user.ban == 0) {
             const allSelers = await sequelize.query(
-                `SELECT orders.id, orders.note, orders.comment, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.creater,
+                `SELECT orders.id, orders.order_number, orders.note, orders.comment, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.creater,
                 orders.price_cash, orders.price_cashless, orders.count, orders.delivery_cash, orders.delivery_cashless,
                 orders.region, orders.client_id, clients.name, orders.sumseller, orders.general_sum, towns.name as town_name
                 FROM orders 

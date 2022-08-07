@@ -120,7 +120,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                 return ctx.status = 400
             }
             const order = await sequelize.query(
-                `SELECT orders.id, if(orders.pay_cashless = 0, orders.firm, "") as firm, orders.note, orders.comment,
+                `SELECT orders.id, orders.order_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, orders.note, orders.comment,
                     DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.price_cash, orders.price_cashless, 
                     orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless, orders.general_sum, 
                     orders.pay_cash, orders.pay_cashless, orders.region, users.login
@@ -396,6 +396,7 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
                     data: preparedData,
                     product_name: `${product_name} від ${replaceClientName[0][0].name}`,
                     pay_cash: pay_cash * -1,
+                    pay_cashless: pay_cashless * -1,
                     debt: pay_cash,
                     client_id: replaceClient,
                     creater: ctx.user.id,
@@ -417,6 +418,7 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
                 data: preparedData,
                 product_name: replaceClient ? `${product_name} на ${replaceToClient[0][0].name}` : product_name,
                 pay_cash: pay_cash,
+                pay_cashless: pay_cashless,
                 debt: 0 - pay_cash,
                 client_id: ctx.params.client_id,
                 creater: ctx.user.id

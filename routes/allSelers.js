@@ -42,7 +42,7 @@ router.get('/api/allselers', authMiddleware, async ctx => {
                 `SELECT orders.order_number, orders.note, orders.comment, orders.car_number,
                 orders.firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name,
                 orders.opt_price, orders.count, orders.delivery_cash, orders.delivery_cashless,
-                orders.region, orders.client_id, clients.name
+                orders.region, orders.client_id, clients.name, orders.delta_mas_cash
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 
                 where firm != "" and pay_cashless = 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'

@@ -80,7 +80,7 @@ router.get('/api/clientinfo/:id', authMiddleware, async ctx => {
         const client = await sequelize.query(
             `SELECT clients.id, clients.name, clients.phone, clients.shop_street, clients.shop_name, 
              clients.reserve_name, clients.reserve_phone, clients.town_id, towns.name as townName, 
-             clients.coefCash, clients.coefCashless
+             clients.coefCash, clients.coefCashless, clients.email
              FROM clients
              LEFT JOIN towns ON clients.town_id = towns.id
              WHERE clients.id = ${ctx.params.id}`
@@ -94,7 +94,7 @@ router.get('/api/clientinfo/:id', authMiddleware, async ctx => {
 })
 
 router.post('/api/client/:town_id', authMiddleware, async ctx => {
-    const {name, phone, shopStreet, shopName, reserveName, reservePhone} = ctx.request.body
+    const {name, phone, shopStreet, shopName, reserveName, reservePhone, email} = ctx.request.body
     try {
         if(ctx.user.role_id != 1 && ctx.user.role_id != 2 && ctx.user.role_id != 5 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -107,7 +107,8 @@ router.post('/api/client/:town_id', authMiddleware, async ctx => {
             shop_name: shopName, 
             reserve_name: reserveName, 
             reserve_phone: reservePhone,
-            town_id: ctx.params.town_id
+            town_id: ctx.params.town_id,
+            email
         })
         return ctx.body = client
     } catch (e) {
@@ -116,7 +117,7 @@ router.post('/api/client/:town_id', authMiddleware, async ctx => {
 })
 
 router.put('/api/client/:client_id', authMiddleware, async ctx => {
-    const {name, phone, shopStreet, shopName, reserveName, reservePhone} = ctx.request.body
+    const {name, phone, shopStreet, shopName, reserveName, reservePhone, email} = ctx.request.body
     try {
         if(ctx.user.role_id != 1 && ctx.user.role_id != 2 && ctx.user.role_id != 4 && ctx.user.role_id !=5 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -138,6 +139,7 @@ router.put('/api/client/:client_id', authMiddleware, async ctx => {
             shop_name: shopName, 
             reserve_name: reserveName, 
             reserve_phone: reservePhone,
+                email: email
             },
             {where: {id: ctx.params.client_id}})
         ctx.body = client
@@ -153,8 +155,6 @@ router.put('/api/clientCoef/:client_id', authMiddleware, async ctx => {
         if(ctx.user.role_id != 1 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
-
-        console.log(coefCash, coefCashless, "AAAAAAAAAAAAAAAAAAAaaaa")
 
         const client = await Client.update(
             {

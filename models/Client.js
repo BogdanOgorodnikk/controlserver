@@ -40,6 +40,9 @@ module.exports = db.sequelize.define(
                 key: 'id'
             }
         },
+        email: {
+            type: Sequelize.STRING
+        }
     },
     {
         timestamps: false

@@ -63,13 +63,13 @@ app.use(prepareOrderComments.routes())
 app.use(personalExpenseComments.routes())
 app.use(clientPrices.routes())
 
-// const ssl = {
-//     key: fs.readFileSync('./cert/key.pem', 'utf8'),
-//     cert: fs.readFileSync('./cert/cert.pem', 'utf8'),
-// }
-//
-// https.createServer(ssl, app.callback()).listen(config.PORT)
+const ssl = {
+    key: fs.readFileSync('./cert/key.pem', 'utf8'),
+    cert: fs.readFileSync('./cert/cert.pem', 'utf8'),
+}
 
-app.listen(config.PORT, () => {
-    console.log(`Server listening on port ${config.PORT}`)
-})
+https.createServer(ssl, app.callback()).listen(config.PORT)
+
+// app.listen(config.PORT, () => {
+//     console.log(`Server listening on port ${config.PORT}`)
+// })

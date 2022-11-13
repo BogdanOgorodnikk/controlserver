@@ -187,7 +187,7 @@ router.post('/api/prepareorder', authMiddleware, async ctx => {
 })
 
 router.put('/api/prepareorder/:id', authMiddleware, async ctx => {
-    const {order_number, note, car_number, firm, region, data, product_name, opt_price, count, delivery_cash, delivery_cashless, client_id, price_cash} = ctx.request.body
+    const {order_number, note, car_number, firm, region, data, product_name, opt_price, count, delivery_cash, delivery_cashless, client_id, price_cash, isSelfCar} = ctx.request.body
     try {
         if(ctx.user.role_id !=1 && ctx.user.role_id !== 2 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -228,6 +228,7 @@ router.put('/api/prepareorder/:id', authMiddleware, async ctx => {
             delivery_cash: delivery_cash,
             delivery_cashless: delivery_cashless,
             client_id: client_id,
+            isSelfCar,
             creater: ctx.user.id
         })
 

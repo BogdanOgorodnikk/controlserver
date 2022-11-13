@@ -88,14 +88,21 @@ router.post('/api/managercheckmoney/:id', authMiddleware, async ctx => {
 })
 
 router.put('/api/managermoneyedit/:id', authMiddleware, async ctx => {
-    const {pay_cash} = ctx.request.body
+    const {pay_cash, data} = ctx.request.body
     try {
         if(ctx.user.role_id !=1 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
+
+        let [day, month, year] = data.split(".");
+
+        const preparedData = format(new Date(year, month - 1, day), "yyyy-MM-dd");
+
         const money = await Order.update(
             {pay_cash: pay_cash,
-            debt: 0 - pay_cash},
+            debt: 0 - pay_cash,
+            data: preparedData,
+            },
             {where: {id: ctx.params.id}}
         )
 

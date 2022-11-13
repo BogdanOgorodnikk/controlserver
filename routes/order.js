@@ -14,7 +14,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
         }
         if(ctx.user.role_id == 1 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT orders.id, orders.order_number, orders.note, orders.comment, orders.car_number,
+                `SELECT orders.id, orders.isSelfCar, orders.order_number, orders.note, orders.comment, orders.car_number,
                     if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create,
                     orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless,
                     orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless,
@@ -53,7 +53,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 2 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, order_number, orders.note, orders.comment, car_number, firm, DATE_FORMAT(data, '%d.%m.%Y') as data, 
+                `SELECT id, isSelfCar, order_number, orders.note, orders.comment, car_number, firm, DATE_FORMAT(data, '%d.%m.%Y') as data, 
                     product_name, opt_price, count, delivery_cash, delivery_cashless, region 
                 FROM orders 
                 where client_id = ${client_id} and firm != "" and orders.pay_cashless = 0
@@ -84,7 +84,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 3 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, order_number, orders.note, orders.comment, car_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, price_cashless, count, sumseller, delivery_cash, delivery_cashless, pay_cash, pay_cashless, region
+                `SELECT id, isSelfCar, order_number, orders.note, orders.comment, car_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, price_cashless, count, sumseller, delivery_cash, delivery_cashless, pay_cash, pay_cashless, region
                 FROM orders 
                 where client_id = ${client_id}
                 ORDER BY id`
@@ -94,7 +94,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 4 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, order_number, orders.note, orders.comment, car_number,
+                `SELECT id, isSelfCar, order_number, orders.note, orders.comment, car_number,
                 if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data,
                 product_name, opt_price, price_cash, delta_mas_cashless, price_cashless, count,
                 delivery_cash, delivery_cashless, pay_cashless, region, general_sum, pay_cash
@@ -120,7 +120,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                 return ctx.status = 400
             }
             const order = await sequelize.query(
-                `SELECT orders.id, orders.order_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, orders.note, orders.comment,
+                `SELECT orders.id, orders.isSelfCar, orders.order_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, orders.note, orders.comment,
                     DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.price_cash, orders.price_cashless, 
                     orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless, orders.general_sum, 
                     orders.pay_cash, orders.pay_cashless, orders.region, users.login
@@ -359,16 +359,49 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
                 creater: ctx.user.id
             })
         } else if (ctx.user.role_id == 4) {
+            let replaceToClient = "";
+
+            if(replaceClient) {
+                const replaceClientName = await sequelize.query(
+                    `SELECT name
+                    FROM clients
+                    where clients.id = ${ctx.params.client_id}`);
+
+                replaceToClient = await sequelize.query(
+                    `SELECT name
+                    FROM clients
+                    where clients.id = ${replaceClient}`);
+
+                const replacedOrder = await Order.create({
+                    data: preparedData,
+                    product_name: `${product_name} від ${replaceClientName[0][0].name}`,
+                    pay_cashless: pay_cashless,
+                    debt: pay_cashless * -1,
+                    firm: firm,
+                    client_id: replaceClient,
+                    creater: ctx.user.id,
+                    comment: !!description,
+                })
+
+                if(description) {
+                    await Comment.create({
+                        description: description,
+                        order_id: replacedOrder.id,
+                        creater_id: ctx.user.id
+                    })
+                }
+            }
+
             order = await Order.create({
                 data: preparedData,
-                product_name: product_name,
-                pay_cashless: pay_cashless,
-                debt: 0 - pay_cashless,
+                product_name: replaceClient ? `${product_name} на ${replaceToClient[0][0].name}` : product_name,
+                pay_cashless: replaceClient ? pay_cashless * -1 : pay_cashless,
+                debt: replaceClient ? pay_cashless : 0 - pay_cashless,
                 firm: firm,
                 client_id: ctx.params.client_id,
                 creater: ctx.user.id
             })
-        } else if (ctx.user.role_id == 5) {
+         } else if (ctx.user.role_id == 5) {
             const client = await sequelize.query(
                 `SELECT * FROM clients where id = ${ctx.params.client_id}`
             )

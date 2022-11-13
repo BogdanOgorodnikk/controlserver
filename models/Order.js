@@ -87,6 +87,9 @@ module.exports = db.sequelize.define(
         client_id: {
             type: Sequelize.INTEGER
         },
+        isSelfCar: {
+            type: Sequelize.BOOLEAN
+        },
     },
     {
         timestamps: false

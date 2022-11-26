@@ -90,6 +90,9 @@ module.exports = db.sequelize.define(
         isSelfCar: {
             type: Sequelize.BOOLEAN
         },
+        original_data_create: {
+            type: Sequelize.DATE
+        }
     },
     {
         timestamps: false

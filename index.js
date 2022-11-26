@@ -32,6 +32,7 @@ const prepareOrders = require('./routes/prepareOrders')
 const prepareOrderComments = require('./routes/prepareOrderComments')
 const personalExpenseComments = require('./routes/personalExpenseComments')
 const clientPrices = require('./routes/clientPrices')
+const clientNote = require('./routes/client_notes')
 
 const app = new Koa()
 app.use(bodyParser())
@@ -62,6 +63,7 @@ app.use(prepareOrders.routes())
 app.use(prepareOrderComments.routes())
 app.use(personalExpenseComments.routes())
 app.use(clientPrices.routes())
+app.use(clientNote.routes())
 
 const ssl = {
     key: fs.readFileSync('./cert/key.pem', 'utf8'),

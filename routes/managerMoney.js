@@ -67,7 +67,8 @@ router.post('/api/managercheckmoney/:id', authMiddleware, async ctx => {
             data: preparedData,
             product_name: "Перевірка", 
             pay_cash: pay_cash,
-            creater: ctx.params.id
+            creater: ctx.params.id,
+            original_data_create: new Date()
         })
 
         const managerMoney = await sequelize.query(

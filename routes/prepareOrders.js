@@ -229,7 +229,8 @@ router.put('/api/prepareorder/:id', authMiddleware, async ctx => {
             delivery_cashless: delivery_cashless,
             client_id: client_id,
             isSelfCar,
-            creater: ctx.user.id
+            creater: ctx.user.id,
+            original_data_create: new Date()
         })
 
         if(price_cash) {

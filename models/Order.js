@@ -92,6 +92,9 @@ module.exports = db.sequelize.define(
         },
         original_data_create: {
             type: Sequelize.DATE
+        },
+        original_data_update: {
+            type: Sequelize.DATE,
         }
     },
     {

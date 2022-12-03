@@ -39,8 +39,8 @@ router.get('/api/allselers', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 2 && ctx.user.ban == 0) {
             const allSelers = await sequelize.query(
-                `SELECT orders.order_number, orders.isSelfCar, orders.note, orders.comment, orders.car_number,
-                orders.firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name,
+                `SELECT orders.order_number, orders.isSelfCar, orders.note, orders.comment, orders.car_number, orders.id,
+                orders.firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.original_data_create,
                 orders.opt_price, orders.count, orders.delivery_cash, orders.delivery_cashless,
                 orders.region, orders.client_id, clients.name, orders.delta_mas_cash
                 FROM orders 
@@ -63,7 +63,7 @@ router.get('/api/allselers', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 4 && ctx.user.ban == 0) {
             const allSelers = await sequelize.query(
-                `SELECT orders.id, orders.isSelfCar, orders.price_cash, orders.delta_cash, orders.delta_cashless, orders.delta_mas_cash, orders.note, orders.comment, orders.order_number, orders.car_number, orders.firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless, orders.count, orders.delivery_cash, orders.delivery_cashless, orders.pay_cashless, orders.region, orders.client_id, orders.delta_mas_cashless, clients.name FROM orders 
+                `SELECT orders.id, orders.isSelfCar, orders.original_data_update, orders.price_cash, orders.delta_cash, orders.delta_cashless, orders.delta_mas_cash, orders.note, orders.comment, orders.order_number, orders.car_number, orders.firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless, orders.count, orders.delivery_cash, orders.delivery_cashless, orders.pay_cashless, orders.region, orders.client_id, orders.delta_mas_cashless, clients.name FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 
                 where firm != "" and pay_cashless = 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY orders.id`

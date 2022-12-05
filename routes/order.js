@@ -631,7 +631,7 @@ router.put('/api/pricecashless/:id', authMiddleware, async ctx => {
 })
 
 router.put('/api/editorder/:id', authMiddleware, async ctx => {
-    const {order_number, note, car_number, firm, region, data, product_name, count, delivery_cash, delivery_cashless, price_cash, opt_price, price_cashless, client_id} = ctx.request.body
+    const {order_number, isSelfCar, note, car_number, firm, region, data, product_name, count, delivery_cash, delivery_cashless, price_cash, opt_price, price_cashless, client_id} = ctx.request.body
     try {
         if(ctx.user.role_id !=1 && ctx.user.role_id != 2 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -647,6 +647,7 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
         if(ctx.user.role_id === 1) {
             const order = await Order.update(
                 {
+                    isSelfCar: Number(isSelfCar),
                     order_number: order_number,
                     note: note,
                     car_number: car_number,
@@ -679,6 +680,7 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
 
             const order = await Order.update(
                 {
+                    isSelfCar: Number(isSelfCar),
                     order_number: order_number,
                     note: note,
                     car_number: car_number,
@@ -715,7 +717,7 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
 
         if(ctx.user.role_id === 1) {
             const newOrder = await sequelize.query(
-                `SELECT orders.id, orders.order_number, orders.note, orders.comment, orders.car_number, orders.firm,
+                `SELECT orders.id, orders.isSelfCar, orders.order_number, orders.note, orders.comment, orders.car_number, orders.firm,
                 DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create,
                 orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless, orders.count, 
                 orders.sumseller, orders.delivery_cash, orders.delivery_cashless, orders.general_sum, orders.pay_cash, 
@@ -733,7 +735,7 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
 
         if(ctx.user.role_id === 2) {
             const newOrder = await sequelize.query(
-                `SELECT orders.id, orders.order_number, orders.note, orders.comment, orders.car_number, orders.firm,
+                `SELECT orders.id, orders.order_number, orders.isSelfCar, orders.note, orders.comment, orders.car_number, orders.firm,
                 DATE_FORMAT(orders.data, '%d.%m.%Y') as data,
                 orders.product_name, orders.opt_price, orders.count, 
                 orders.delivery_cash, orders.delivery_cashless,

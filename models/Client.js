@@ -42,6 +42,9 @@ module.exports = db.sequelize.define(
         },
         email: {
             type: Sequelize.STRING
+        },
+        birthday: {
+            type: Sequelize.DATE
         }
     },
     {

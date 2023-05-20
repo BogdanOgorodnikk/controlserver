@@ -385,7 +385,8 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
                     client_id: replaceClient,
                     creater: ctx.user.id,
                     comment: !!description,
-                    original_data_create: new Date()
+                    original_data_create: new Date(),
+                    original_data_update: new Date(),
                 })
 
                 if(description) {
@@ -405,7 +406,8 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
                 firm: firm,
                 client_id: ctx.params.client_id,
                 creater: ctx.user.id,
-                original_data_create: new Date()
+                original_data_create: new Date(),
+                original_data_update: new Date(),
             })
          } else if (ctx.user.role_id == 5) {
             const client = await sequelize.query(
@@ -472,7 +474,7 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
                 orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless,
                 orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless,
                 orders.general_sum, orders.pay_cash, orders.pay_cashless, orders.delta_cashless,
-                orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash,
+                orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash, orders.original_data_update,
                 orders.creater, orders.region, orders.debt, orders.client_id, users.login
                 FROM orders
                 LEFT JOIN users ON orders.creater = users.id
@@ -758,26 +760,45 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
 router.put('/api/editpaymoney/:id', authMiddleware, async ctx => {
     const {data, product_name, pay_cash, pay_cashless, clientId, firm} = ctx.request.body
     try {
-        if(ctx.user.role_id !=1 || ctx.user.ban == 1) {
+        if(ctx.user.role_id !=1 && ctx.user.role_id !== 4 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
 
-        let [day, month, year] = data.split(".");
-
-        const preparedData = format(new Date(year, month - 1, day), "yyyy-MM-dd");
-
-        const order = await Order.update(
-            {
-                data: preparedData,
-                product_name: product_name,
-                pay_cash: pay_cash,
-                pay_cashless: pay_cashless,
-                debt: 0 - pay_cash - pay_cashless,
-                client_id: clientId,
-                firm: firm,
-            },
-            {where: {id: ctx.params.id}}
+        const orderInfo = await sequelize.query(
+            `SELECT * FROM orders where id = ${ctx.params.id}`
         )
+
+        if(ctx.user.role_id === 1) {
+            let [day, month, year] = data.split(".");
+
+            const preparedData = format(new Date(year, month - 1, day), "yyyy-MM-dd");
+
+            const order = await Order.update(
+                {
+                    data: preparedData,
+                    product_name: product_name,
+                    pay_cash: pay_cash,
+                    pay_cashless: pay_cashless,
+                    debt: 0 - pay_cash - pay_cashless,
+                    client_id: clientId,
+                    firm: firm,
+                    original_data_update: orderInfo[0][0].original_data_update ? orderInfo[0][0].original_data_update : new Date(),
+                },
+                {where: {id: ctx.params.id}}
+            )
+
+        } else if(ctx.user.role_id === 4) {
+            const order = await Order.update(
+                {
+                    pay_cashless: pay_cashless,
+                    debt: 0 - orderInfo[0][0].pay_cash - pay_cashless,
+                    original_data_update: orderInfo[0][0].original_data_update ? orderInfo[0][0].original_data_update : new Date(),
+                },
+                {where: {id: ctx.params.id}}
+            )
+
+        }
+
 
         const newOrder = await sequelize.query(
             `SELECT orders.id, orders.order_number, orders.note, orders.comment, orders.car_number,
@@ -785,7 +806,7 @@ router.put('/api/editpaymoney/:id', authMiddleware, async ctx => {
                 orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless,
                 orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless,
                 orders.general_sum, orders.pay_cash, orders.pay_cashless, orders.delta_cashless,
-                orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash,
+                orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash, orders.original_data_update,
                 orders.creater, orders.region, orders.debt, orders.client_id, users.login
                 FROM orders 
                 LEFT JOIN users ON orders.creater = users.id

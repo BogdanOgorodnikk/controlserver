@@ -24,6 +24,15 @@ router.get('/api/managermoney', authMiddleware, async ctx => {
 
 router.get('/api/managermoney/:id', authMiddleware, async ctx => {
     const id = ctx.params.id
+    const start = ctx.query.start;
+    const end = ctx.query.end;
+
+    let [startDay, startMonth, startYear] = start.split(".");
+    let [day, month, year] = end.split(".");
+
+    const preparedDataStart = format(new Date(startYear, startMonth - 1, startDay), "yyyy-MM-dd");
+    const preparedDataEnd = format(new Date(year, month - 1, day), "yyyy-MM-dd");
+
     try {
         if(ctx.user.role_id != 1 && ctx.user.role_id != 3 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -40,7 +49,7 @@ router.get('/api/managermoney/:id', authMiddleware, async ctx => {
             IFNULL(clients.name, '') AS name
             FROM orders 
             LEFT JOIN clients ON orders.client_id = clients.id
-            where (creater = ${id} and orders.product_name != "Перевірка") or (creater = ${id} and orders.product_name = "Перевірка" and orders.client_id = 0)
+            where (creater = ${id} and orders.product_name != "Перевірка" and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}') or (creater = ${id} and orders.product_name = "Перевірка" and orders.client_id = 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}')
             ORDER BY orders.id`
         )
         return ctx.body = {

@@ -45,7 +45,9 @@ router.get('/api/alldebts', authMiddleware, async ctx => {
                 `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name, towns.name as townName,
                  towns.region, towns.area, clients.coefCash, clients.coefCashless,
                  sum(case when orders.note RLIKE('^Ф1') then orders.general_sum end) as genSumCash,
-                 sum(orders.pay_cash) as cashMon
+                 sum(orders.pay_cash) as cashMon, towns.manager_id, towns.safemanager_id,
+                 towns.securitymanager_id, towns.second_security_manager_id,
+                 towns.third_security_manager_id
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id
                 JOIN towns ON clients.town_id = towns.id

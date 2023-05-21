@@ -41,7 +41,7 @@ router.get('/api/allselers', authMiddleware, async ctx => {
             const allSelers = await sequelize.query(
                 `SELECT orders.order_number, orders.isSelfCar, orders.note, orders.comment, orders.car_number, orders.id,
                 orders.firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.original_data_create,
-                orders.opt_price, orders.count, orders.delivery_cash, orders.delivery_cashless,
+                orders.opt_price, orders.count, orders.delivery_cash, orders.delivery_cashless, orders.price_cash,
                 orders.region, orders.client_id, clients.name, orders.delta_mas_cash
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 

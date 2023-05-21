@@ -8,6 +8,15 @@ const Comment = require("../models/Comment");
 
 router.get('/api/orders/:client_id', authMiddleware, async ctx => {
     const client_id = ctx.params.client_id
+    const start = ctx.query.start;
+    const end = ctx.query.end;
+
+    let [startDay, startMonth, startYear] = start.split(".");
+    let [day, month, year] = end.split(".");
+
+    const preparedDataStart = format(new Date(startYear, startMonth - 1, startDay), "yyyy-MM-dd");
+    const preparedDataEnd = format(new Date(year, month - 1, day), "yyyy-MM-dd");
+
     try {
         if(ctx.user.role_id < 1 || ctx.user.role_id > 5 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -23,7 +32,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                     orders.creater, orders.region, orders.debt, orders.client_id, users.login
                     FROM orders 
                     LEFT JOIN users ON orders.creater = users.id
-                    where client_id = ${client_id}
+                    where client_id = ${client_id} AND DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                     ORDER BY orders.id`
             )
 
@@ -37,7 +46,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                  prepare_orders.creater, prepare_orders.region, prepare_orders.client_id, users.login
                  FROM prepare_orders
                  LEFT JOIN users ON prepare_orders.creater = users.id
-                 WHERE prepare_orders.order_number = "" && prepare_orders.client_id = ${client_id}
+                 WHERE prepare_orders.order_number = "" and prepare_orders.client_id = ${client_id} and DATE(prepare_orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                  ORDER BY prepare_orders.id`
             );
 
@@ -56,7 +65,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                 `SELECT id, isSelfCar, order_number, orders.note, orders.comment, car_number, firm, DATE_FORMAT(data, '%d.%m.%Y') as data, 
                     product_name, opt_price, count, delivery_cash, delivery_cashless, region, original_data_create 
                 FROM orders 
-                where client_id = ${client_id} and firm != "" and orders.pay_cashless = 0
+                where client_id = ${client_id} and firm != "" and orders.pay_cashless = 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY id`
             )
 
@@ -68,7 +77,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                  prepare_orders.count,
                  prepare_orders.region
                  FROM prepare_orders
-                 WHERE prepare_orders.order_number = "" && prepare_orders.client_id = ${client_id}
+                 WHERE prepare_orders.order_number = "" and prepare_orders.client_id = ${client_id} and DATE(prepare_orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                  ORDER BY prepare_orders.id`
             );
 
@@ -86,7 +95,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             const order = await sequelize.query(
                 `SELECT id, isSelfCar, order_number, orders.note, orders.comment, car_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, price_cashless, count, sumseller, delivery_cash, delivery_cashless, pay_cash, pay_cashless, region
                 FROM orders 
-                where client_id = ${client_id}
+                where client_id = ${client_id} and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY id`
             )
             return ctx.body = {
@@ -99,7 +108,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                 product_name, opt_price, price_cash, delta_mas_cashless, price_cashless, count,
                 delivery_cash, delivery_cashless, pay_cashless, region, general_sum, pay_cash
                 FROM orders 
-                where client_id = ${client_id}
+                where client_id = ${client_id} and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY id`
             )
             return ctx.body = {
@@ -126,7 +135,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                     orders.pay_cash, orders.pay_cashless, orders.region, users.login
                 FROM orders 
                 LEFT JOIN users ON orders.creater = users.id
-                where client_id = ${client_id}
+                where client_id = ${client_id} and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY id`
             )
 
@@ -139,7 +148,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                  prepare_orders.count,
                  prepare_orders.region
                  FROM prepare_orders
-                 WHERE prepare_orders.order_number = "" && prepare_orders.client_id = ${client_id}
+                 WHERE prepare_orders.order_number = "" and prepare_orders.client_id = ${client_id} and DATE(prepare_orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                  ORDER BY prepare_orders.id`
             );
 

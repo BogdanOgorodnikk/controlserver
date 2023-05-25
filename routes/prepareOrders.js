@@ -103,7 +103,9 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
                 safemanager_id = ${ctx.user.id} or
                 securitymanager_id = ${ctx.user.id} or
                 second_security_manager_id = ${ctx.user.id} or
-                third_security_manager_id = ${ctx.user.id}`
+                third_security_manager_id = ${ctx.user.id} or
+                fourth_security_manager_id = ${ctx.user.id} or
+                fiveth_security_manager_id = ${ctx.user.id}`
             )
 
             const newTownsList = town[0].map((item) => {

@@ -15,7 +15,7 @@ router.get('/api/town', authMiddleware, async ctx => {
             return ctx.body = towns[0]
         } else if(ctx.user.role_id == 5) {
             const towns = await sequelize.query(
-                `SELECT * FROM towns where manager_id = ${ctx.user.id} or safemanager_id = ${ctx.user.id} or securitymanager_id = ${ctx.user.id} or second_security_manager_id = ${ctx.user.id} or third_security_manager_id = ${ctx.user.id}`
+                `SELECT * FROM towns where manager_id = ${ctx.user.id} or safemanager_id = ${ctx.user.id} or securitymanager_id = ${ctx.user.id} or second_security_manager_id = ${ctx.user.id} or third_security_manager_id = ${ctx.user.id} or fourth_security_manager_id = ${ctx.user.id} or fiveth_security_manager_id = ${ctx.user.id}`
             )
             return ctx.body = towns[0]
         }
@@ -108,13 +108,13 @@ router.put('/api/town/:id', authMiddleware, async ctx => {
 })
 
 router.put('/api/town/manager/:id', authMiddleware, async ctx => {
-    const {manager_id, safemanager_id, securitymanager_id, second_security_manager_id, third_security_manager_id} = ctx.request.body
+    const {manager_id, safemanager_id, securitymanager_id, second_security_manager_id, third_security_manager_id, fourth_security_manager_id, fiveth_security_manager_id} = ctx.request.body
     try {
         if(ctx.user.role_id != 1 || ctx.user.role_id == 1 && ctx.user.ban == 1) {
             return ctx.status = 400
         }
         await Town.update(
-            {manager_id: manager_id, safemanager_id: safemanager_id, securitymanager_id: securitymanager_id, second_security_manager_id: second_security_manager_id, third_security_manager_id: third_security_manager_id},
+            {manager_id: manager_id, safemanager_id: safemanager_id, securitymanager_id: securitymanager_id, second_security_manager_id: second_security_manager_id, third_security_manager_id: third_security_manager_id, fourth_security_manager_id, fiveth_security_manager_id},
             {where: {id: ctx.params.id}}
         )
 
@@ -133,7 +133,8 @@ router.put('/api/town/manager/:id', authMiddleware, async ctx => {
             safemanager_id,
             securitymanager_id,
             second_security_manager_id,
-            third_security_manager_id
+            third_security_manager_id,
+            fourth_security_manager_id, fiveth_security_manager_id
         }
     } catch (e) {
         ctx.body = e

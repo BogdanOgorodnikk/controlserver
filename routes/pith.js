@@ -18,7 +18,7 @@ router.get('/api/pith/:client_id', authMiddleware, async ctx => {
             `SELECT * FROM towns where id = ${client[0][0].town_id} ORDER BY id`
         )
 
-        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id) {
+        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id && town[0][0].fourth_security_manager_id != ctx.user.id && town[0][0].fiveth_security_manager_id != ctx.user.id) {
             return ctx.status = 400
         }
 
@@ -55,7 +55,7 @@ router.get('/api/pithSum/:client_id', authMiddleware, async ctx => {
             `SELECT sum(price_cash*(number * 1.6)) as sumPith FROM piths where client_id = ${client_id} and math = 1`
         )
 
-        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id) {
+        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id && town[0][0].fourth_security_manager_id != ctx.user.id && town[0][0].fiveth_security_manager_id != ctx.user.id) {
             return ctx.status = 400
         }
 
@@ -74,7 +74,7 @@ router.get('/api/townpith/:town_id', authMiddleware, async ctx => {
         const town = await sequelize.query(
             `SELECT * FROM towns where id = ${town_id} ORDER BY id`
         )
-        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id) {
+        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id && town[0][0].fourth_security_manager_id != ctx.user.id && town[0][0].fiveth_security_manager_id != ctx.user.id) {
             return ctx.status = 400
         }
         const clients = await sequelize.query(
@@ -126,7 +126,7 @@ router.post('/api/pith/:client_id', authMiddleware, async ctx => {
         const town = await sequelize.query(
             `SELECT * FROM towns where id = ${client[0][0].town_id}`
         )
-        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id) {
+        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id && town[0][0].fourth_security_manager_id != ctx.user.id && town[0][0].fiveth_security_manager_id != ctx.user.id) {
             return ctx.status = 400
         }
 
@@ -216,7 +216,7 @@ router.put('/api/mathpith/:id', authMiddleware, async ctx => {
         const town = await sequelize.query(
             `SELECT * FROM towns where id = ${client[0][0].town_id}`
         )
-        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id) {
+        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id && town[0][0].fourth_security_manager_id != ctx.user.id && town[0][0].fiveth_security_manager_id != ctx.user.id) {
             return ctx.status = 400
         }
         const pith = await Pith.update(

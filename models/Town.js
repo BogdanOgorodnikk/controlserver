@@ -53,6 +53,20 @@ module.exports = db.sequelize.define(
                 key: 'id'
             }
         },
+        fourth_security_manager_id: {
+            type: Sequelize.INTEGER,
+            references: {
+                model: 'users',
+                key: 'id'
+            }
+        },
+        fiveth_security_manager_id: {
+            type: Sequelize.INTEGER,
+            references: {
+                model: 'users',
+                key: 'id'
+            }
+        },
     },
     {
         timestamps: false

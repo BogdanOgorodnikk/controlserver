@@ -75,11 +75,11 @@ router.get('/api/allselers', authMiddleware, async ctx => {
             const allSelers = await sequelize.query(
                 `SELECT orders.id, orders.isSelfCar, orders.order_number, orders.note, orders.comment, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.creater,
                 orders.price_cash, orders.price_cashless, orders.count, orders.delivery_cash, orders.delivery_cashless,
-                orders.region, orders.client_id, clients.name, orders.sumseller, orders.general_sum, towns.name as town_name
+                orders.region, orders.client_id, clients.name, towns.manager_id, orders.sumseller, orders.general_sum, towns.name as town_name
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 
                 JOIN towns ON clients.town_id = towns.id 
-                where (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id}) and firm != "" and pay_cashless = 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
+                where (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id} or towns.fourth_security_manager_id = ${ctx.user.id} or towns.fiveth_security_manager_id = ${ctx.user.id}) and firm != "" and pay_cashless = 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                 ORDER BY orders.id`
             )
             return ctx.body = {

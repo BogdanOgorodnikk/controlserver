@@ -117,7 +117,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                 where id = ${client[0][0].town_id}
                 ORDER BY id`
             )
-            if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id) {
+            if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id && town[0][0].fourth_security_manager_id != ctx.user.id && town[0][0].fiveth_security_manager_id != ctx.user.id) {
                 return ctx.status = 400
             }
             const order = await sequelize.query(
@@ -417,7 +417,7 @@ router.post('/api/paymoney/:client_id', authMiddleware, async ctx => {
             const town = await sequelize.query(
                 `SELECT * FROM towns where id = ${client[0][0].town_id}`
             )
-            if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id) {
+            if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id && town[0][0].fourth_security_manager_id != ctx.user.id && town[0][0].fiveth_security_manager_id != ctx.user.id) {
                 return ctx.status = 400
             }
 
@@ -506,7 +506,7 @@ router.post('/api/checkmoney/:client_id', authMiddleware, async ctx => {
         const town = await sequelize.query(
             `SELECT * FROM towns where id = ${client[0][0].town_id}`
         )
-        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id) {
+        if(ctx.user.role_id == 5 && town[0][0].manager_id != ctx.user.id && town[0][0].safemanager_id != ctx.user.id && town[0][0].securitymanager_id != ctx.user.id && town[0][0].second_security_manager_id != ctx.user.id && town[0][0].third_security_manager_id != ctx.user.id && town[0][0].fourth_security_manager_id != ctx.user.id && town[0][0].fiveth_security_manager_id != ctx.user.id) {
             return ctx.status = 400
         }
 

@@ -14,7 +14,7 @@ router.get('/api/client/:town_id', authMiddleware, async ctx => {
         )
         if(ctx.user.role_id < 1 || ctx.user.role_id > 6 || ctx.user.ban == 1) {
             return ctx.status = 400
-        } else if(ctx.user.role_id == 5 && townManagers[0][0].manager_id != ctx.user.id && townManagers[0][0].safemanager_id != ctx.user.id && townManagers[0][0].securitymanager_id != ctx.user.id && townManagers[0][0].second_security_manager_id != ctx.user.id && townManagers[0][0].third_security_manager_id != ctx.user.id) {
+        } else if(ctx.user.role_id == 5 && townManagers[0][0].manager_id != ctx.user.id && townManagers[0][0].safemanager_id != ctx.user.id && townManagers[0][0].securitymanager_id != ctx.user.id && townManagers[0][0].second_security_manager_id != ctx.user.id && townManagers[0][0].third_security_manager_id != ctx.user.id && townManagers[0][0].fourth_security_manager_id != ctx.user.id && townManagers[0][0].fiveth_security_manager_id != ctx.user.id) {
             return ctx.status = 400
         }
         const client = await sequelize.query(
@@ -63,7 +63,7 @@ router.get('/api/clientsbirthday', authMiddleware, async ctx => {
                  DATE_FORMAT((clients.birthday),'%m-%d') = DATE_FORMAT(NOW(),'%m-%d') as isBirthday
                  FROM clients
                  LEFT JOIN towns ON clients.town_id = towns.id
-                 WHERE (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id}) and MONTH(clients.birthday) = MONTH(NOW()) AND YEAR(clients.birthday) = YEAR(NOW())
+                 WHERE (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id} or towns.fourth_security_manager_id = ${ctx.user.id} or towns.fiveth_security_manager_id = ${ctx.user.id}) and MONTH(clients.birthday) = MONTH(NOW()) AND YEAR(clients.birthday) = YEAR(NOW())
                  ORDER BY isBirthday DESC`
             )
 
@@ -166,12 +166,12 @@ router.put('/api/client/:client_id', authMiddleware, async ctx => {
             return ctx.status = 400
         }
         const townManagers = await sequelize.query(
-            `SELECT clients.town_id, towns.manager_id, towns.safemanager_id, towns.securitymanager_id, towns.second_security_manager_id, towns.third_security_manager_id
+            `SELECT clients.town_id, towns.manager_id, towns.safemanager_id, towns.securitymanager_id, towns.second_security_manager_id, towns.third_security_manager_id, towns.fourth_security_manager_id, towns.fiveth_security_manager_id
             from clients 
             LEFT JOIN towns ON town_id = towns.id 
             where clients.id = ${ctx.params.client_id}`
         )
-        if(ctx.user.role_id == 5 && townManagers[0][0].manager_id != ctx.user.id && townManagers[0][0].safemanager_id != ctx.user.id && townManagers[0][0].securitymanager_id != ctx.user.id && townManagers[0][0].second_security_manager_id != ctx.user.id && townManagers[0][0].third_security_manager_id != ctx.user.id) {
+        if(ctx.user.role_id == 5 && townManagers[0][0].manager_id != ctx.user.id && townManagers[0][0].safemanager_id != ctx.user.id && townManagers[0][0].securitymanager_id != ctx.user.id && townManagers[0][0].second_security_manager_id != ctx.user.id && townManagers[0][0].third_security_manager_id != ctx.user.id && townManagers[0][0].fourth_security_manager_id != ctx.user.id && townManagers[0][0].fiveth_security_manager_id != ctx.user.id) {
             return ctx.status = 400
         }
 

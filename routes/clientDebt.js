@@ -47,7 +47,7 @@ router.get('/api/alldebts', authMiddleware, async ctx => {
                  sum(case when orders.note RLIKE('^Ф1') then orders.general_sum end) as genSumCash,
                  sum(orders.pay_cash) as cashMon, towns.manager_id, towns.safemanager_id,
                  towns.securitymanager_id, towns.second_security_manager_id,
-                 towns.third_security_manager_id
+                 towns.third_security_manager_id, towns.fourth_security_manager_id, towns.fiveth_security_manager_id
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id
                 JOIN towns ON clients.town_id = towns.id
@@ -84,22 +84,22 @@ router.get('/api/alldebts', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 5) {
             const debts = await sequelize.query(
-                `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name, towns.manager_id, towns.safemanager_id, towns.securitymanager_id, towns.second_security_manager_id, towns.third_security_manager_id, towns.name as townName, towns.region, towns.area,
+                `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name, towns.manager_id, towns.safemanager_id, towns.securitymanager_id, towns.second_security_manager_id, towns.third_security_manager_id, towns.fourth_security_manager_id, towns.fiveth_security_manager_id, towns.name as townName, towns.region, towns.area,
                  sum(case when orders.note RLIKE('^Ф1') then orders.general_sum end) as genSumCash,
                  sum(orders.pay_cash) as cashMon, clients.coefCash, clients.coefCashless
                 FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id
                 JOIN towns ON clients.town_id = towns.id
-                where  orders.product_name != "Перевірка" and (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id})
+                where  orders.product_name != "Перевірка" and (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id} or towns.fourth_security_manager_id = ${ctx.user.id} or towns.fiveth_security_manager_id = ${ctx.user.id})
                 GROUP BY clients.id
                 `
             )
             const pithDebts = await sequelize.query(
-                `SELECT sum(piths.price_cash*(piths.number * 1.6)) as sumPith, piths.client_id, towns.manager_id, towns.safemanager_id, towns.securitymanager_id, towns.second_security_manager_id, towns.third_security_manager_id
+                `SELECT sum(piths.price_cash*(piths.number * 1.6)) as sumPith, piths.client_id, towns.manager_id, towns.safemanager_id, towns.securitymanager_id, towns.second_security_manager_id, towns.third_security_manager_id, towns.fourth_security_manager_id, towns.fiveth_security_manager_id
                 FROM piths 
                 LEFT JOIN clients ON piths.client_id = clients.id
                 JOIN towns ON clients.town_id = towns.id
-                WHERE (piths.math = 1) and (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id})
+                WHERE (piths.math = 1) and (towns.manager_id = ${ctx.user.id} or towns.safemanager_id = ${ctx.user.id} or towns.securitymanager_id = ${ctx.user.id} or towns.second_security_manager_id = ${ctx.user.id} or towns.third_security_manager_id = ${ctx.user.id} or towns.fourth_security_manager_id = ${ctx.user.id} or towns.fiveth_security_manager_id = ${ctx.user.id})
                 GROUP BY clients.id
                 `
             )

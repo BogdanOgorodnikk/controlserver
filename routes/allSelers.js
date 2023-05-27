@@ -27,7 +27,7 @@ router.get('/api/allselers', authMiddleware, async ctx => {
                 orders.sumseller, orders.delivery_cash, orders.delivery_cashless, orders.general_sum, orders.pay_cash, 
                 orders.pay_cashless, orders.delta_cashless, orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash, 
                 orders.creater, orders.region, orders.debt, orders.client_id, clients.name, users.login, towns.name as town_name, 
-                towns.area FROM orders 
+                towns.area, towns.manager_id FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 
                 JOIN users ON orders.creater = users.id
                 JOIN towns ON clients.town_id = towns.id

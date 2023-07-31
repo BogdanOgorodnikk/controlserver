@@ -898,6 +898,9 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
     const client_id = ctx.params.client_id
     const start = ctx.query.start;
     const end = ctx.query.end;
+    const cash = ctx.query.cash === 'true';
+    const cashless = ctx.query.cashless === 'true';
+
     let [startDay, startMonth, startYear] = start.split(".");
     let [day, month, year] = end.split(".");
 
@@ -909,25 +912,51 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
             return ctx.status = 400
         }
 
+        let queryCash = ''
+
+        if(!cash && !cashless) {
+            queryCash = 'orders.pay_cashless = 0 and orders.pay_cash = 0 and'
+        } else if(!cash) {
+            queryCash = 'orders.pay_cash = 0 and'
+        } else if(!cashless) {
+            queryCash = 'orders.pay_cashless = 0 and'
+        }
+
             const orders = await sequelize.query(
-                `SELECT orders.id, orders.data, orders.product_name, orders.sumseller, 
-                 orders.pay_cash, orders.pay_cashless
+                `SELECT orders.id, orders.data, orders.product_name, orders.general_sum, orders.car_number,
+                 orders.pay_cash, orders.pay_cashless, orders.account_number, orders.count, orders.opt_price
                  FROM orders
-                 WHERE client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
+                 WHERE ${queryCash} client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                  ORDER BY orders.id`
             )
 
         const debet = await sequelize.query(
-            `SELECT sum(orders.sumseller) as amount
+            `SELECT sum(orders.general_sum) as amount
                  FROM orders
                  WHERE client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
         )
 
-        const credet = await sequelize.query(
-            `SELECT (sum(orders.pay_cash) + sum(orders.pay_cashless)) as amount
+        let sum = ''
+
+        if(cash) {
+            sum = 'sum(orders.pay_cash)'
+        }
+
+        if(cashless) {
+            sum = `${sum} + sum(orders.pay_cashless)`
+        }
+
+        let credet = 0
+
+        if(sum) {
+            credet = await sequelize.query(
+                `SELECT (${sum}) as amount
                  FROM orders
                  WHERE client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
-        )
+            )
+        }
+
+
 
 
 
@@ -935,7 +964,7 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
             return ctx.body = {
                 orders: orders[0],
                 debet: debet[0][0].amount,
-                credet: credet[0][0].amount
+                credet: credet ? credet[0][0].amount : credet
             }
     } catch (e) {
         ctx.body = e

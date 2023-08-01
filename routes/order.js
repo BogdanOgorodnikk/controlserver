@@ -924,7 +924,7 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
 
             const orders = await sequelize.query(
                 `SELECT orders.id, orders.data, orders.product_name, orders.general_sum, orders.car_number,
-                 orders.pay_cash, orders.pay_cashless, orders.account_number, orders.count, orders.opt_price
+                 orders.pay_cash, orders.pay_cashless, orders.account_number, orders.count, orders.price_cash
                  FROM orders
                  WHERE ${queryCash} client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                  ORDER BY orders.id`

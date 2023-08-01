@@ -623,7 +623,7 @@ router.put('/api/pricecashless/:id', authMiddleware, async ctx => {
             `SELECT orders.id, orders.order_number, orders.original_data_update, orders.note, orders.comment, orders.car_number, orders.firm,
               DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.opt_price, orders.price_cash,
               orders.delta_mas_cashless, orders.price_cashless, orders.count, orders.delivery_cash, orders.delivery_cashless,
-              orders.pay_cashless, orders.region, clients.name
+              orders.pay_cashless, orders.region, clients.name, orders.delta_cash, orders.delta_cashless, orders.delta_mas_cash
              FROM orders 
              LEFT JOIN clients ON orders.client_id = clients.id
              where orders.id = ${ctx.params.id}`
@@ -924,7 +924,8 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
 
             const orders = await sequelize.query(
                 `SELECT orders.id, orders.data, orders.product_name, orders.general_sum, orders.car_number,
-                 orders.pay_cash, orders.pay_cashless, orders.account_number, orders.count, orders.price_cash
+                 orders.pay_cash, orders.pay_cashless, orders.account_number, orders.count, orders.price_cash,
+                 orders.sumseller, orders.delivery_cash
                  FROM orders
                  WHERE ${queryCash} client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                  ORDER BY orders.id`

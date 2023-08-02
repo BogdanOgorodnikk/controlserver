@@ -985,18 +985,21 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
 router.get('/api/statisticks', authMiddleware, async ctx => {
     const startData = "2021-01-01";
     const endData = format(new Date(), "yyyy-MM-dd");
+    const region = ctx.query.region;
 
     try {
         if(ctx.user.role_id !== 1 || ctx.user.ban === 1) {
             return ctx.status = 400
         }
 
+        const regionQuery = region ? `region = '${region}' and` : ''
+
 
 
         let orders = await sequelize.query(
             `SELECT YEAR(data) AS year, MONTH(data) AS month, region, SUM(count) AS total_tons_sold
              FROM orders
-             WHERE data >= '${startData}' AND data <= '${endData}'
+             WHERE ${regionQuery} data >= '${startData}' AND data <= '${endData}'
              GROUP BY
                  YEAR(data),
                  MONTH(data),
@@ -1038,6 +1041,10 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
             }
 
             data.push({ month: row.month, total_tons_sold: row.total_tons_sold });
+        }
+
+        if (data.length > 0) {
+            result.push({ region: currentRegion, year: currentYear, data });
         }
 
         return ctx.body = {

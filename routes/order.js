@@ -54,7 +54,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 2 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, isSelfCar, order_number, orders.note, orders.comment, car_number, firm, DATE_FORMAT(data, '%d.%m.%Y') as data, 
+                `SELECT id, isSelfCar, orders.account_number, order_number, orders.note, orders.comment, car_number, firm, DATE_FORMAT(data, '%d.%m.%Y') as data, 
                     product_name, opt_price, count, delivery_cash, delivery_cashless, region, original_data_create 
                 FROM orders 
                 where client_id = ${client_id} and firm != "" and orders.pay_cashless = 0
@@ -85,7 +85,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 3 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, isSelfCar, order_number, orders.note, orders.comment, car_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, price_cashless, count, sumseller, delivery_cash, delivery_cashless, pay_cash, pay_cashless, region
+                `SELECT id, isSelfCar, orders.account_number, order_number, orders.note, orders.comment, car_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, price_cashless, count, sumseller, delivery_cash, delivery_cashless, pay_cash, pay_cashless, region
                 FROM orders 
                 where client_id = ${client_id}
                 ORDER BY id`
@@ -121,7 +121,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
                 return ctx.status = 400
             }
             const order = await sequelize.query(
-                `SELECT orders.id, orders.isSelfCar, orders.order_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, orders.note, orders.comment,
+                `SELECT orders.id, orders.account_number, orders.isSelfCar, orders.order_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, orders.note, orders.comment,
                     DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.price_cash, orders.price_cashless, 
                     orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless, orders.general_sum, 
                     orders.pay_cash, orders.pay_cashless, orders.region, users.login
@@ -898,6 +898,7 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
     const client_id = ctx.params.client_id
     const start = ctx.query.start;
     const end = ctx.query.end;
+    const product = ctx.query.product;
     const cash = ctx.query.cash === 'true';
     const cashless = ctx.query.cashless === 'true';
 
@@ -922,19 +923,21 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
             queryCash = 'orders.pay_cashless = 0 and'
         }
 
+        const productQuery = product ? `orders.product_name = '${product}' and` : ''
+
             const orders = await sequelize.query(
                 `SELECT orders.id, orders.data, orders.product_name, orders.general_sum, orders.car_number,
                  orders.pay_cash, orders.pay_cashless, orders.account_number, orders.count, orders.price_cash,
                  orders.sumseller, orders.delivery_cash
                  FROM orders
-                 WHERE ${queryCash} client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
+                 WHERE ${productQuery} ${queryCash} client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                  ORDER BY orders.id`
             )
 
         const debet = await sequelize.query(
             `SELECT sum(orders.general_sum) as amount
                  FROM orders
-                 WHERE client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
+                 WHERE ${productQuery} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
         )
 
         let sum = ''
@@ -953,9 +956,15 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
             credet = await sequelize.query(
                 `SELECT (${sum}) as amount
                  FROM orders
-                 WHERE client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
+                 WHERE ${productQuery} client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
             )
         }
+
+        const mas = await sequelize.query(
+            `SELECT sum(orders.count) as amount
+                 FROM orders
+                 WHERE ${productQuery} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
+        )
 
 
 
@@ -965,8 +974,75 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
             return ctx.body = {
                 orders: orders[0],
                 debet: debet[0][0].amount,
-                credet: credet ? credet[0][0].amount : credet
+                credet: credet ? credet[0][0].amount : credet,
+                mas: mas[0][0].amount
             }
+    } catch (e) {
+        ctx.body = e
+    }
+})
+
+router.get('/api/statisticks', authMiddleware, async ctx => {
+    const startData = "2021-01-01";
+    const endData = format(new Date(), "yyyy-MM-dd");
+
+    try {
+        if(ctx.user.role_id !== 1 || ctx.user.ban === 1) {
+            return ctx.status = 400
+        }
+
+
+
+        let orders = await sequelize.query(
+            `SELECT YEAR(data) AS year, MONTH(data) AS month, region, SUM(count) AS total_tons_sold
+             FROM orders
+             WHERE data >= '${startData}' AND data <= '${endData}'
+             GROUP BY
+                 YEAR(data),
+                 MONTH(data),
+                 region
+             ORDER BY
+             YEAR(data),
+                 region,
+                                            
+                 MONTH(data)
+                 `)
+
+
+        orders = orders[0].filter((item) => item.total_tons_sold)
+        const result = [];
+        let currentRegion = null;
+        let currentYear = null;
+        let data = [];
+
+        for (const row of orders) {
+            if (currentRegion === null) {
+                currentRegion = row.region;
+            }
+
+            if (currentRegion !== row.region) {
+                result.push({ region: currentRegion, year: currentYear, data });
+                currentRegion = row.region;
+                currentYear = null;
+                data = [];
+            }
+
+            if (currentYear === null) {
+                currentYear = row.year;
+            }
+
+            if (currentYear !== row.year) {
+                result.push({ region: currentRegion, year: currentYear, data });
+                currentYear = row.year;
+                data = [];
+            }
+
+            data.push({ month: row.month, total_tons_sold: row.total_tons_sold });
+        }
+
+        return ctx.body = {
+            orders: result,
+        }
     } catch (e) {
         ctx.body = e
     }

@@ -986,6 +986,10 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
     const startData = "2021-01-01";
     const endData = format(new Date(), "yyyy-MM-dd");
     const region = ctx.query.region;
+    const area = ctx.query.area;
+    const product = ctx.query.product;
+    const town = ctx.query.town;
+    const note = ctx.query.note;
 
     try {
         if(ctx.user.role_id !== 1 || ctx.user.ban === 1) {
@@ -993,13 +997,19 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
         }
 
         const regionQuery = region ? `region = '${region}' and` : ''
+        const areaQuery = area ? `area = '${area}' and` : ''
+        const productQuery = product ? `product_name = '${product}' and` : ''
+        const townQuery = town ? `towns.id = ${town} and` : ''
+        const noteQuery = note ? `note = '${note}' and` : ''
 
 
 
         let orders = await sequelize.query(
-            `SELECT YEAR(data) AS year, MONTH(data) AS month, region, SUM(count) AS total_tons_sold
+            `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region, SUM(orders.count) AS total_tons_sold, towns.area
              FROM orders
-             WHERE ${regionQuery} data >= '${startData}' AND data <= '${endData}'
+             LEFT JOIN clients ON orders.client_id = clients.id 
+             JOIN towns ON clients.town_id = towns.id
+             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}'
              GROUP BY
                  YEAR(data),
                  MONTH(data),
@@ -1038,6 +1048,13 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
                 result.push({ region: currentRegion, year: currentYear, data });
                 currentYear = row.year;
                 data = [];
+            }
+
+
+            if(data.length && data.length !== row.month - 1) {
+                for(let i = 0; i < row.month - data.length; i++) {
+                    data.push({ month: row.month - i + 1, total_tons_sold: 0, aaa: row.month, i: i });
+                }
             }
 
             data.push({ month: row.month, total_tons_sold: row.total_tons_sold });

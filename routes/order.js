@@ -918,9 +918,9 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
         if(!cash && !cashless) {
             queryCash = 'orders.pay_cashless = 0 and orders.pay_cash = 0 and'
         } else if(!cash) {
-            queryCash = 'orders.pay_cash = 0 and'
+            queryCash = "orders.pay_cash = 0 and orders.note NOT LIKE '%Ф1%' and"
         } else if(!cashless) {
-            queryCash = 'orders.pay_cashless = 0 and'
+            queryCash = "orders.pay_cashless = 0 and orders.note NOT LIKE '%Ф2%' and orders.note NOT LIKE '%Ф3%' and"
         }
 
         const productQuery = product ? `orders.product_name = '${product}' and` : ''
@@ -937,7 +937,7 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
         const debet = await sequelize.query(
             `SELECT sum(orders.general_sum) as amount
                  FROM orders
-                 WHERE ${productQuery} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
+                 WHERE ${productQuery} ${queryCash} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
         )
 
         let sum = ''
@@ -963,7 +963,7 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
         const mas = await sequelize.query(
             `SELECT sum(orders.count) as amount
                  FROM orders
-                 WHERE ${productQuery} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
+                 WHERE ${productQuery} ${queryCash} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
         )
 
 
@@ -996,7 +996,7 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
             return ctx.status = 400
         }
 
-        const regionQuery = region ? `region = '${region}' and` : ''
+        const regionQuery = region ? `orders.region = '${region}' and` : ''
         const areaQuery = area ? `area = '${area}' and` : ''
         const productQuery = product ? `product_name = '${product}' and` : ''
         const townQuery = town ? `towns.id = ${town} and` : ''
@@ -1034,6 +1034,25 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
             }
 
             if (currentRegion !== row.region) {
+                if(data.length !== 12) {
+                    let newData = []
+
+                    for (let i = 1; i <= 12; i++) {
+                        const monthData = data.find(item => item.month === i); // Шукаємо об'єкт для поточного місяця
+
+                        if (monthData) {
+                            newData.push(monthData);
+                        } else {
+                            newData.push({
+                                "month": i,
+                                "total_tons_sold": 0 // Якщо даних для місяця немає, встановлюємо продажі в 0
+                            });
+                        }
+                    }
+
+                    data = [...newData]
+                }
+
                 result.push({ region: currentRegion, year: currentYear, data });
                 currentRegion = row.region;
                 currentYear = null;
@@ -1045,22 +1064,53 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
             }
 
             if (currentYear !== row.year) {
+                if(data.length !== 12) {
+                    let newData = []
+
+                    for (let i = 1; i <= 12; i++) {
+                        const monthData = data.find(item => item.month === i); // Шукаємо об'єкт для поточного місяця
+
+                        if (monthData) {
+                            newData.push(monthData);
+                        } else {
+                            newData.push({
+                                "month": i,
+                                "total_tons_sold": 0 // Якщо даних для місяця немає, встановлюємо продажі в 0
+                            });
+                        }
+                    }
+
+                    data = [...newData]
+                }
+
                 result.push({ region: currentRegion, year: currentYear, data });
                 currentYear = row.year;
                 data = [];
-            }
-
-
-            if(data.length && data.length !== row.month - 1) {
-                for(let i = 0; i < row.month - data.length; i++) {
-                    data.push({ month: row.month - i + 1, total_tons_sold: 0, aaa: row.month, i: i });
-                }
             }
 
             data.push({ month: row.month, total_tons_sold: row.total_tons_sold });
         }
 
         if (data.length > 0) {
+            if(data.length !== 12) {
+                let newData = []
+
+                for (let i = 1; i <= 12; i++) {
+                    const monthData = data.find(item => item.month === i); // Шукаємо об'єкт для поточного місяця
+
+                    if (monthData) {
+                        newData.push(monthData);
+                    } else {
+                        newData.push({
+                            "month": i,
+                            "total_tons_sold": 0 // Якщо даних для місяця немає, встановлюємо продажі в 0
+                        });
+                    }
+                }
+
+                data = [...newData]
+            }
+
             result.push({ region: currentRegion, year: currentYear, data });
         }
 

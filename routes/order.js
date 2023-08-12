@@ -1122,4 +1122,104 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
     }
 })
 
+router.get('/api/statisticks/:client_id', authMiddleware, async ctx => {
+    const startData = "2021-01-01";
+    const endData = format(new Date(), "yyyy-MM-dd");
+    const client_id = ctx.params.client_id
+    const product = ctx.query.product;
+    const note = ctx.query.note;
+
+    try {
+        if(ctx.user.role_id !== 1 || ctx.user.ban === 1) {
+            return ctx.status = 400
+        }
+
+        const productQuery = product ? `product_name = '${product}' and` : ''
+        const noteQuery = note ? `note = '${note}' and` : ''
+
+
+
+        let orders = await sequelize.query(
+            `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, SUM(orders.count) AS total_tons_sold
+             FROM orders
+             WHERE ${noteQuery} ${productQuery} data >= '${startData}' AND data <= '${endData}' and orders.client_id = ${client_id}
+             GROUP BY
+                 YEAR(data),
+                 MONTH(data)
+             ORDER BY
+             YEAR(data),
+                                            
+                 MONTH(data)
+                 `)
+
+
+        const result = [];
+        let currentYear = null;
+        let data = [];
+
+        for (const row of orders[0]) {
+            if (currentYear === null) {
+                currentYear = row.year;
+            }
+
+            if (currentYear !== row.year) {
+                if(data.length !== 12) {
+                    let newData = []
+
+                    for (let i = 1; i <= 12; i++) {
+                        const monthData = data.find(item => item.month === i); // Шукаємо об'єкт для поточного місяця
+
+                        if (monthData) {
+                            newData.push(monthData);
+                        } else {
+                            newData.push({
+                                "month": i,
+                                "total_tons_sold": 0 // Якщо даних для місяця немає, встановлюємо продажі в 0
+                            });
+                        }
+                    }
+
+                    data = [...newData]
+                }
+
+                result.push({ year: currentYear, data });
+                currentYear = row.year;
+                data = [];
+            }
+
+            data.push({ month: row.month, total_tons_sold: row.total_tons_sold });
+        }
+
+        if (data.length > 0) {
+            if(data.length !== 12) {
+                let newData = []
+
+                for (let i = 1; i <= 12; i++) {
+                    const monthData = data.find(item => item.month === i); // Шукаємо об'єкт для поточного місяця
+
+                    if (monthData) {
+                        newData.push(monthData);
+                    } else {
+                        newData.push({
+                            "month": i,
+                            "total_tons_sold": 0 // Якщо даних для місяця немає, встановлюємо продажі в 0
+                        });
+                    }
+                }
+
+                data = [...newData]
+            }
+
+            result.push({ year: currentYear, data });
+        }
+
+        return ctx.body = {
+            orders: result,
+        }
+    } catch (e) {
+        ctx.body = e
+    }
+})
+
+
 module.exports = router

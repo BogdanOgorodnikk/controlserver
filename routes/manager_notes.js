@@ -7,12 +7,13 @@ const authMiddleware = require('../middleware/auth.middleware')
 router.get('/api/manager-note/:manager_id', authMiddleware, async ctx => {
     const manager_id = ctx.params.manager_id
 
+
     try {
         if(ctx.user.role_id !== 1 && ctx.user.role_id !== 5 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
 
-        if(ctx.user.role_id === 5 && ctx.user.id !== manager_id) {
+        if(ctx.user.role_id === 5 && ctx.user.id !== Number(manager_id)) {
             return ctx.status = 400
         }
 

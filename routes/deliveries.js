@@ -11,7 +11,7 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
         }
 
         const cars = await sequelize.query(
-            `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id,
+            `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
              DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
              users.login, cars.car_number
              FROM deliveries 
@@ -25,7 +25,7 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
 })
 
 router.post('/api/deliveries', authMiddleware, async ctx => {
-    const {car_id, delivery_start, delivery_end, date} = ctx.request.body
+    const {car_id, delivery_start, delivery_end, date, cash, cashless} = ctx.request.body
 
     try {
         if(ctx.user.role_id !== 1 && ctx.user.role_id !== 2 || ctx.user.ban == 1) {
@@ -37,12 +37,14 @@ router.post('/api/deliveries', authMiddleware, async ctx => {
             delivery_start,
             delivery_end,
             date,
+            cash,
+            cashless,
             creater_id: ctx.user.id,
             date_create: new Date()
         })
 
         const newDelivery = await sequelize.query(
-            `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id,
+            `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
              DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
              users.login, cars.car_number
              FROM deliveries 
@@ -58,7 +60,7 @@ router.post('/api/deliveries', authMiddleware, async ctx => {
 })
 
 router.put('/api/deliveries', authMiddleware, async ctx => {
-    const {id, car_id, delivery_start, delivery_end, date} = ctx.request.body
+    const {id, car_id, delivery_start, delivery_end, date, cash, cashless} = ctx.request.body
 
     try {
         if(ctx.user.role_id !=1 || ctx.user.ban == 1) {
@@ -71,12 +73,14 @@ router.put('/api/deliveries', authMiddleware, async ctx => {
                 delivery_start,
                 delivery_end,
                 date,
+                cash,
+                cashless
             },
             {where: {id: id}}
         )
 
         const newDelivery = await sequelize.query(
-            `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id,
+            `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
              DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
              users.login, cars.car_number
              FROM deliveries 

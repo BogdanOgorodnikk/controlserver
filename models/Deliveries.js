@@ -18,6 +18,12 @@ module.exports = db.sequelize.define(
         delivery_end: {
             type: Sequelize.STRING
         },
+        cash: {
+            type: Sequelize.DOUBLE
+        },
+        cashless: {
+            type: Sequelize.DOUBLE
+        },
         date: {
             type: Sequelize.DATE
         },

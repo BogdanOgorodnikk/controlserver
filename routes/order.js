@@ -1221,5 +1221,78 @@ router.get('/api/statisticks/:client_id', authMiddleware, async ctx => {
     }
 })
 
+router.get('/api/statisticks/town/:town_id', authMiddleware, async ctx => {
+    const startData = "2021-01-01";
+    const endData = format(new Date(), "yyyy-MM-dd");
+    const townId = ctx.params.town_id
+    const startMonth = ctx.query.startMonth;
+    const endMonth = ctx.query.endMonth;
+
+    try {
+        if(ctx.user.role_id !== 1 || ctx.user.ban === 1) {
+            return ctx.status = 400
+        }
+
+        const startQuery = startMonth ? `MONTH(orders.data) >= '${startMonth}' and` : ''
+        const endQuery = endMonth ? `MONTH(orders.data) <= '${endMonth}' and` : ''
+
+
+
+        let [clients] = await sequelize.query(
+            `SELECT id, name
+             FROM clients
+             WHERE clients.town_id = ${townId}`)
+
+
+        let [orders] = await sequelize.query(
+            `SELECT YEAR(orders.data) AS year, SUM(orders.count) AS total_tons_sold, clients.id as clientId
+             FROM orders
+             LEFT JOIN clients ON orders.client_id = clients.id 
+             JOIN towns ON clients.town_id = towns.id
+             WHERE ${startQuery} ${endQuery} data >= '${startData}' AND data <= '${endData}' and towns.id = ${townId}
+             GROUP BY
+                 YEAR(data),
+                 clients.id
+             ORDER BY
+             YEAR(data)`)
+
+        let uniqueYears = []
+
+        orders.forEach((item) => {
+            if(!uniqueYears.includes(item.year)) {
+                uniqueYears.push(item.year)
+            }
+        })
+
+
+        let data = []
+
+        clients.forEach((item) => {
+            let prepareData = {clientId: item.id, name: item.name, data: []}
+
+            uniqueYears.forEach((year) => {
+                const count = orders.find((order) => order.clientId === item.id && order.year === year)
+
+                if(count) {
+                    prepareData.data.push(count.total_tons_sold)
+                } else {
+                    prepareData.data.push(0)
+                }
+            })
+
+            data.push(prepareData)
+            prepareData = {}
+        })
+
+
+        return ctx.body = {
+            orders: data,
+            years: uniqueYears
+        }
+    } catch (e) {
+        ctx.body = e
+    }
+})
+
 
 module.exports = router

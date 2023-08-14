@@ -6,7 +6,7 @@ const authMiddleware = require('../middleware/auth.middleware')
 
 router.get('/api/area', authMiddleware, async ctx => {
     try {
-        if(ctx.user.role_id != 1 && ctx.user.role_id != 2 || ctx.user.ban == 1) {
+        if(ctx.user.role_id != 1 && ctx.user.role_id != 2 && ctx.user.role_id !== 5 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
         const areas = await sequelize.query(

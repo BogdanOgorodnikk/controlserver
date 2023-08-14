@@ -24,8 +24,14 @@ module.exports = db.sequelize.define(
         cashless: {
             type: Sequelize.DOUBLE
         },
+        product: {
+            type: Sequelize.STRING
+        },
+        client: {
+            type: Sequelize.STRING
+        },
         date: {
-            type: Sequelize.DATE
+            type: Sequelize.STRING
         },
         date_create: {
             type: Sequelize.DATE

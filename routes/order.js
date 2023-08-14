@@ -992,7 +992,7 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
     const note = ctx.query.note;
 
     try {
-        if(ctx.user.role_id !== 1 || ctx.user.ban === 1) {
+        if(ctx.user.role_id !== 1 && ctx.user.role_id !== 5 || ctx.user.ban === 1) {
             return ctx.status = 400
         }
 
@@ -1002,10 +1002,12 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
         const townQuery = town ? `towns.id = ${town} and` : ''
         const noteQuery = note ? `note = '${note}' and` : ''
 
+        let orders
 
 
-        let orders = await sequelize.query(
-            `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region, SUM(orders.count) AS total_tons_sold, towns.area
+        if(ctx.user.role_id === 1) {
+            orders = await sequelize.query(
+                `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region, SUM(orders.count) AS total_tons_sold, towns.area
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
              JOIN towns ON clients.town_id = towns.id
@@ -1020,6 +1022,27 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
                                             
                  MONTH(data)
                  `)
+        } else {
+            orders = await sequelize.query(
+             `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region,
+              SUM(orders.count) AS total_tons_sold, towns.area
+             FROM orders
+             LEFT JOIN clients ON orders.client_id = clients.id 
+             JOIN towns ON clients.town_id = towns.id
+             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}' and towns.manager_id = ${ctx.user.id}
+             GROUP BY
+                 YEAR(data),
+                 MONTH(data),
+                 region
+             ORDER BY
+             YEAR(data),
+                 region,
+                                            
+                 MONTH(data)
+                 `)
+        }
+
+
 
 
         orders = orders[0].filter((item) => item.total_tons_sold)
@@ -1229,8 +1252,20 @@ router.get('/api/statisticks/town/:town_id', authMiddleware, async ctx => {
     const endMonth = ctx.query.endMonth;
 
     try {
-        if(ctx.user.role_id !== 1 || ctx.user.ban === 1) {
+        if(ctx.user.role_id !== 1 && ctx.user.role_id !== 5 || ctx.user.ban === 1) {
             return ctx.status = 400
+        }
+
+        if(ctx.user.role_id === 5) {
+            const [town] = await sequelize.query(`
+                SELECT manager_id
+                FROM towns
+                WHERE id = ${townId}
+            `)
+
+            if(town[0].manager_id !== ctx.user.id) {
+                return  ctx.status = 400
+            }
         }
 
         const startQuery = startMonth ? `MONTH(orders.data) >= '${startMonth}' and` : ''
@@ -1293,6 +1328,149 @@ router.get('/api/statisticks/town/:town_id', authMiddleware, async ctx => {
         ctx.body = e
     }
 })
+
+
+router.get('/api/manager-statisticks/:manager_id', authMiddleware, async ctx => {
+    const startData = "2021-01-01";
+    const endData = format(new Date(), "yyyy-MM-dd");
+    const managerId = ctx.params.manager_id;
+    const region = ctx.query.region;
+    const area = ctx.query.area;
+    const product = ctx.query.product;
+    const town = ctx.query.town;
+    const note = ctx.query.note;
+
+    try {
+        if(ctx.user.role_id !== 1 || ctx.user.ban === 1) {
+            return ctx.status = 400
+        }
+
+        const regionQuery = region ? `orders.region = '${region}' and` : ''
+        const areaQuery = area ? `area = '${area}' and` : ''
+        const productQuery = product ? `product_name = '${product}' and` : ''
+        const townQuery = town ? `towns.id = ${town} and` : ''
+        const noteQuery = note ? `note = '${note}' and` : ''
+
+        let orders = await sequelize.query(
+                `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region, SUM(orders.count) AS total_tons_sold, towns.area
+             FROM orders
+             LEFT JOIN clients ON orders.client_id = clients.id 
+             JOIN towns ON clients.town_id = towns.id
+             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}' and (towns.manager_id = ${managerId} or towns.safemanager_id = ${managerId} or towns.securitymanager_id = ${managerId} or towns.second_security_manager_id = ${managerId} or towns.third_security_manager_id = ${managerId} or towns.fourth_security_manager_id = ${managerId} or towns.fiveth_security_manager_id = ${managerId})
+             GROUP BY
+                 YEAR(data),
+                 MONTH(data),
+                 region
+             ORDER BY
+             YEAR(data),
+                 region,
+                                            
+                 MONTH(data)
+                 `)
+
+
+
+
+        orders = orders[0].filter((item) => item.total_tons_sold)
+        const result = [];
+        let currentRegion = null;
+        let currentYear = null;
+        let data = [];
+
+        for (const row of orders) {
+            if (currentRegion === null) {
+                currentRegion = row.region;
+            }
+
+            if (currentRegion !== row.region) {
+                if(data.length !== 12) {
+                    let newData = []
+
+                    for (let i = 1; i <= 12; i++) {
+                        const monthData = data.find(item => item.month === i); // Шукаємо об'єкт для поточного місяця
+
+                        if (monthData) {
+                            newData.push(monthData);
+                        } else {
+                            newData.push({
+                                "month": i,
+                                "total_tons_sold": 0 // Якщо даних для місяця немає, встановлюємо продажі в 0
+                            });
+                        }
+                    }
+
+                    data = [...newData]
+                }
+
+                result.push({ region: currentRegion, year: currentYear, data });
+                currentRegion = row.region;
+                currentYear = null;
+                data = [];
+            }
+
+            if (currentYear === null) {
+                currentYear = row.year;
+            }
+
+            if (currentYear !== row.year) {
+                if(data.length !== 12) {
+                    let newData = []
+
+                    for (let i = 1; i <= 12; i++) {
+                        const monthData = data.find(item => item.month === i); // Шукаємо об'єкт для поточного місяця
+
+                        if (monthData) {
+                            newData.push(monthData);
+                        } else {
+                            newData.push({
+                                "month": i,
+                                "total_tons_sold": 0 // Якщо даних для місяця немає, встановлюємо продажі в 0
+                            });
+                        }
+                    }
+
+                    data = [...newData]
+                }
+
+                result.push({ region: currentRegion, year: currentYear, data });
+                currentYear = row.year;
+                data = [];
+            }
+
+            data.push({ month: row.month, total_tons_sold: row.total_tons_sold });
+        }
+
+        if (data.length > 0) {
+            if(data.length !== 12) {
+                let newData = []
+
+                for (let i = 1; i <= 12; i++) {
+                    const monthData = data.find(item => item.month === i); // Шукаємо об'єкт для поточного місяця
+
+                    if (monthData) {
+                        newData.push(monthData);
+                    } else {
+                        newData.push({
+                            "month": i,
+                            "total_tons_sold": 0 // Якщо даних для місяця немає, встановлюємо продажі в 0
+                        });
+                    }
+                }
+
+                data = [...newData]
+            }
+
+            result.push({ region: currentRegion, year: currentYear, data });
+        }
+
+        return ctx.body = {
+            orders: result,
+        }
+    } catch (e) {
+        ctx.body = e
+    }
+})
+
 
 
 module.exports = router

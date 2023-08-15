@@ -1153,8 +1153,21 @@ router.get('/api/statisticks/:client_id', authMiddleware, async ctx => {
     const note = ctx.query.note;
 
     try {
-        if(ctx.user.role_id !== 1 || ctx.user.ban === 1) {
+        if(ctx.user.role_id !== 1 && ctx.user.role_id !== 5 || ctx.user.ban === 1) {
             return ctx.status = 400
+        }
+
+        if(ctx.user.role_id === 5) {
+            const [town] = await sequelize.query(`
+                SELECT towns.manager_id
+                FROM clients
+                JOIN towns ON towns.id = clients.town_id
+                WHERE clients.id = ${client_id}
+            `)
+
+            if(town[0].manager_id !== ctx.user.id) {
+                return  ctx.status = 400
+            }
         }
 
         const productQuery = product ? `product_name = '${product}' and` : ''

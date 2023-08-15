@@ -117,7 +117,7 @@ router.get('/api/clientinfo/:id', authMiddleware, async ctx => {
 
         const client = await sequelize.query(
             `SELECT clients.id, clients.name, clients.phone, clients.shop_street, clients.shop_name, 
-             clients.reserve_name, clients.reserve_phone, clients.town_id, towns.name as townName, 
+             clients.reserve_name, clients.reserve_phone, clients.town_id, towns.name as townName, towns.manager_id,
              clients.coefCash, clients.coefCashless, clients.email, DATE_FORMAT(clients.birthday, '%d.%m.%Y') as birthday
              FROM clients
              LEFT JOIN towns ON clients.town_id = towns.id

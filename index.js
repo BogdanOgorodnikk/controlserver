@@ -37,6 +37,8 @@ const managerNote = require('./routes/manager_notes')
 const car = require('./routes/car')
 const deliveries = require('./routes/deliveries')
 const account = require('./routes/account')
+const curator = require('./routes/curator')
+const accountPayments = require('./routes/accountPayments')
 
 const app = new Koa()
 app.use(bodyParser())
@@ -72,6 +74,8 @@ app.use(managerNote.routes())
 app.use(car.routes())
 app.use(deliveries.routes())
 app.use(account.routes())
+app.use(curator.routes())
+app.use(accountPayments.routes())
 
 const ssl = {
     key: fs.readFileSync('./cert/key.pem', 'utf8'),

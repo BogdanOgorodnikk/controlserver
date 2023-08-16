@@ -2,12 +2,15 @@ const Sequelize = require('sequelize')
 const db = require('../database/db')
 
 module.exports = db.sequelize.define(
-    'accounts',
+    'accountPayments',
     {
         id: {
             type: Sequelize.INTEGER,
             primaryKey: true,
             autoIncrement: true
+        },
+        payment_id: {
+            type: Sequelize.INTEGER
         },
         date: {
             type: Sequelize.DATE
@@ -15,19 +18,10 @@ module.exports = db.sequelize.define(
         date_create: {
             type: Sequelize.DATE
         },
-        account_number: {
-            type: Sequelize.STRING
-        },
-        account_amount: {
+        amount: {
             type: Sequelize.FLOAT
         },
-        firm: {
-            type: Sequelize.STRING
-        },
-        curator_id: {
-            type: Sequelize.INTEGER
-        },
-        client: {
+        payment_number: {
             type: Sequelize.STRING
         },
         creater_id: {

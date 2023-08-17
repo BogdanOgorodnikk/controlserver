@@ -29,14 +29,34 @@ router.get('/api/accounts', authMiddleware, async ctx => {
         }
 
         const cars = await sequelize.query(
-            `SELECT accounts.id, DATE_FORMAT(accounts.date, '%d.%m.%Y') as date, client, account_number, 
-             account_amount, firm, curators.name as curator, curator_id, sum(amount) as paymentAmount
-             FROM accounts 
-             JOIN curators ON curators.id = accounts.curator_id
-             LEFT JOIN accountPayments ON accountPayments.payment_id = accounts.id
-             WHERE ${firmQuery} ${curatorQuery} ${clientQuery} DATE(accounts.date) >= '${preparedDataStart}' AND DATE(accounts.date) <= '${preparedDataEnd}'
-             GROUP BY accounts.id`
-        )
+            `SELECT sub.*, 
+               CASE
+                   WHEN (sub.account_amount - sub.paymentAmount) > 0 THEN 1
+                   WHEN (sub.account_amount - sub.paymentAmount) < 0 THEN 1
+                   ELSE (sub.account_amount - sub.paymentAmount)
+               END AS order_condition
+            FROM (
+                SELECT accounts.id, 
+                       DATE_FORMAT(accounts.date, '%d.%m.%Y') as date, 
+                       client, 
+                       account_number, 
+                       account_amount, 
+                       firm, 
+                       curators.name as curator, 
+                       curator_id, 
+                       SUM(accountPayments.amount) as paymentAmount
+                FROM accounts 
+                JOIN curators ON curators.id = accounts.curator_id
+                LEFT JOIN accountPayments ON accountPayments.payment_id = accounts.id
+                WHERE ${firmQuery} ${curatorQuery} ${clientQuery} DATE(accounts.date) >= '${preparedDataStart}' AND DATE(accounts.date) <= '${preparedDataEnd}'
+                GROUP BY accounts.id
+            ) AS sub
+            ORDER BY 
+                CASE
+                    WHEN order_condition = 1 OR order_condition IS NULL THEN 0
+                    ELSE 1
+                END,
+                order_condition`)
         return ctx.body = cars[0]
     } catch (e) {
         return ctx.body = e

@@ -20,13 +20,14 @@ router.get('/api/account-payments/:id', authMiddleware, async ctx => {
         )
 
         const accountInfo = await sequelize.query(
-            `SELECT id, account_number
+            `SELECT accounts.id, account_number, account_amount, SUM(accountPayments.amount) as paymentAmount
              FROM accounts
-             WHERE id = ${paymentId}`
+             LEFT JOIN accountPayments ON accountPayments.payment_id = accounts.id
+             WHERE accounts.id = ${paymentId}`
         )
 
         return ctx.body = {
-            cars: cars[0],
+            cars: cars[0].reverse(),
             accountInfo: accountInfo[0][0]
         }
     } catch (e) {

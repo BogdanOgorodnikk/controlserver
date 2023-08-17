@@ -1352,6 +1352,7 @@ router.get('/api/manager-statisticks/:manager_id', authMiddleware, async ctx => 
     const product = ctx.query.product;
     const town = ctx.query.town;
     const note = ctx.query.note;
+    const mainManager = ctx.query.mainManager === 'true';
 
     try {
         if(ctx.user.role_id !== 1 || ctx.user.ban === 1) {
@@ -1363,13 +1364,14 @@ router.get('/api/manager-statisticks/:manager_id', authMiddleware, async ctx => 
         const productQuery = product ? `product_name = '${product}' and` : ''
         const townQuery = town ? `towns.id = ${town} and` : ''
         const noteQuery = note ? `note = '${note}' and` : ''
+        const queryManager = mainManager ? `towns.manager_id = ${managerId}` : `(towns.manager_id = ${managerId} or towns.safemanager_id = ${managerId} or towns.securitymanager_id = ${managerId} or towns.second_security_manager_id = ${managerId} or towns.third_security_manager_id = ${managerId} or towns.fourth_security_manager_id = ${managerId} or towns.fiveth_security_manager_id = ${managerId})`
 
         let orders = await sequelize.query(
                 `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region, SUM(orders.count) AS total_tons_sold, towns.area
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
              JOIN towns ON clients.town_id = towns.id
-             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}' and (towns.manager_id = ${managerId} or towns.safemanager_id = ${managerId} or towns.securitymanager_id = ${managerId} or towns.second_security_manager_id = ${managerId} or towns.third_security_manager_id = ${managerId} or towns.fourth_security_manager_id = ${managerId} or towns.fiveth_security_manager_id = ${managerId})
+             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}' and ${queryManager}
              GROUP BY
                  YEAR(data),
                  MONTH(data),

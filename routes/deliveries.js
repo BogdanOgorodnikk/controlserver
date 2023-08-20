@@ -27,6 +27,12 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
     const isShownCashQuery = !isShownCash ? `deliveries.cash = 0 and` : ''
     const isShownCashlessQuery = !isShownCashless ? `deliveries.cashless = 0 and` : ''
 
+    const productOrderQuery = product ? `product_name LIKE '%${product}%' and` : ''
+    const clientOrderQuery = client ? `name LIKE '%${client}%' and` : ''
+    const carNumberOrderQuery = carNumber ? `car_number LIKE '%${carNumber}%' and` : ''
+    const isShownCashOrderQuery = !isShownCash ? `delivery_cash = 0 and` : ''
+    const isShownCashlessOrderQuery = !isShownCashless ? `delivery_cashless = 0 and` : ''
+
     try {
         if(ctx.user.role_id !== 1 && ctx.user.role_id !== 2 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -41,7 +47,22 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
              JOIN cars ON deliveries.car_id = cars.id
              WHERE ${productQuery} ${clientQuery} ${carNumberQuery} ${isShownCashQuery} ${isShownCashlessQuery} DATE(deliveries.date) >= '${preparedDataStart}' AND DATE(deliveries.date) <= '${preparedDataEnd}'`
         )
-        return ctx.body = cars[0]
+
+        const orders = await sequelize.query(
+            `SELECT orders.id, car_number, product_name, clients.name, DATE_FORMAT(orders.data, '%d.%m.%Y') as data,
+             users.login, delivery_cash, delivery_cashless, DATE_FORMAT(orders.data_create, '%d.%m.%Y') as data_create,
+             towns.name as town
+             FROM orders 
+             JOIN users ON orders.creater = users.id
+             JOIN clients ON clients.id = client_id
+             JOIN towns ON towns.id = clients.town_id
+             WHERE ${productOrderQuery} ${clientOrderQuery} ${carNumberOrderQuery} ${isShownCashOrderQuery} ${isShownCashlessOrderQuery} DATE(orders.data) >= '${preparedDataStart}' AND DATE(orders.data) <= '${preparedDataEnd}' AND isSelfCar = 1`
+        )
+
+        return ctx.body = {
+            cars: cars[0],
+            orders: orders[0]
+        }
     } catch (e) {
         return ctx.body = e
     }

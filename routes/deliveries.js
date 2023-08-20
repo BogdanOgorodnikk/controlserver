@@ -12,8 +12,8 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
     const product = ctx.query.product;
     const client = ctx.query.client;
     const carNumber = ctx.query.carNumber;
-    const isShownCash = ctx.query.isShownCash;
-    const isShownCashless = ctx.query.isShownCashless;
+    const isShownCash = ctx.query.isShownCash === 'true';
+    const isShownCashless = ctx.query.isShownCashless === 'true';
 
     let [startDay, startMonth, startYear] = start.split(".");
     let [day, month, year] = end.split(".");
@@ -28,8 +28,8 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
     const isShownCashlessQuery = !isShownCashless ? `deliveries.cashless = 0 and` : ''
 
     const productOrderQuery = product ? `product_name LIKE '%${product}%' and` : ''
-    const clientOrderQuery = client ? `name LIKE '%${client}%' and` : ''
-    const carNumberOrderQuery = carNumber ? `car_number LIKE '%${carNumber}%' and` : ''
+    const clientOrderQuery = client ? `clients.name LIKE '%${client}%' and` : ''
+    const carNumberOrderQuery = carNumber ? `car_number = '${carNumber}' and` : ''
     const isShownCashOrderQuery = !isShownCash ? `delivery_cash = 0 and` : ''
     const isShownCashlessOrderQuery = !isShownCashless ? `delivery_cashless = 0 and` : ''
 
@@ -45,7 +45,8 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
              FROM deliveries 
              JOIN users ON deliveries.creater_id = users.id
              JOIN cars ON deliveries.car_id = cars.id
-             WHERE ${productQuery} ${clientQuery} ${carNumberQuery} ${isShownCashQuery} ${isShownCashlessQuery} DATE(deliveries.date) >= '${preparedDataStart}' AND DATE(deliveries.date) <= '${preparedDataEnd}'`
+             WHERE ${productQuery} ${clientQuery} ${carNumberQuery} ${isShownCashQuery} ${isShownCashlessQuery} DATE(deliveries.date) >= '${preparedDataStart}' AND DATE(deliveries.date) <= '${preparedDataEnd}'
+             ORDER BY deliveries.id desc`
         )
 
         const orders = await sequelize.query(
@@ -56,7 +57,8 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
              JOIN users ON orders.creater = users.id
              JOIN clients ON clients.id = client_id
              JOIN towns ON towns.id = clients.town_id
-             WHERE ${productOrderQuery} ${clientOrderQuery} ${carNumberOrderQuery} ${isShownCashOrderQuery} ${isShownCashlessOrderQuery} DATE(orders.data) >= '${preparedDataStart}' AND DATE(orders.data) <= '${preparedDataEnd}' AND isSelfCar = 1`
+             WHERE ${productOrderQuery} ${clientOrderQuery} ${carNumberOrderQuery} ${isShownCashOrderQuery} ${isShownCashlessOrderQuery} DATE(orders.data) >= '${preparedDataStart}' AND DATE(orders.data) <= '${preparedDataEnd}' AND isSelfCar = 1
+             ORDER BY orders.id desc`
         )
 
         return ctx.body = {

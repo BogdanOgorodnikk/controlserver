@@ -80,7 +80,7 @@ router.post('/api/accounts', authMiddleware, async ctx => {
         const account = await Accounts.create({
             date: preparedDate,
             account_number,
-            account_amount,
+            account_amount: Number(account_amount),
             firm,
             client,
             curator_id,
@@ -119,7 +119,7 @@ router.put('/api/accounts', authMiddleware, async ctx => {
             {
                 date: preparedDate,
                 account_number,
-                account_amount,
+                account_amount: Number(account_amount),
                 firm,
                 curator_id,
                 client

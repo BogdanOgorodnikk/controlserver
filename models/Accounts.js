@@ -19,7 +19,7 @@ module.exports = db.sequelize.define(
             type: Sequelize.STRING
         },
         account_amount: {
-            type: Sequelize.FLOAT
+            type: Sequelize.DOUBLE
         },
         firm: {
             type: Sequelize.STRING

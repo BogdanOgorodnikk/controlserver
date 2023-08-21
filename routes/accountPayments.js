@@ -51,7 +51,7 @@ router.post('/api/account-payments', authMiddleware, async ctx => {
         const account = await AccountPayments.create({
             date: preparedDate,
             payment_id,
-            amount: Number(amount),
+            amount: Number(amount.replace(/,/g, '.')),
             payment_number,
             creater_id: ctx.user.id,
             date_create: new Date()
@@ -84,7 +84,7 @@ router.put('/api/account-payments', authMiddleware, async ctx => {
         await AccountPayments.update(
             {
                 date: preparedDate,
-                amount: Number(amount),
+                amount: Number(amount.replace(/,/g, '.')),
                 payment_number,
             },
             {where: {id: id}}

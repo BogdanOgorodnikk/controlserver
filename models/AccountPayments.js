@@ -19,7 +19,7 @@ module.exports = db.sequelize.define(
             type: Sequelize.DATE
         },
         amount: {
-            type: Sequelize.FLOAT
+            type: Sequelize.DOUBLE
         },
         payment_number: {
             type: Sequelize.STRING

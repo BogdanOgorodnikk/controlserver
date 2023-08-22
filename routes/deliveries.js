@@ -23,13 +23,13 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
 
     const productQuery = product ? `deliveries.product LIKE '%${product}%' and` : ''
     const clientQuery = client ? `deliveries.client LIKE '%${client}%' and` : ''
-    const carNumberQuery = carNumber ? `cars.car_number = '${carNumber}' and` : ''
+    const carNumberQuery = carNumber ? `cars.car_number LIKE '%${carNumber}%' and` : ''
     const isShownCashQuery = !isShownCash ? `deliveries.cash = 0 and` : ''
     const isShownCashlessQuery = !isShownCashless ? `deliveries.cashless = 0 and` : ''
 
     const productOrderQuery = product ? `product_name LIKE '%${product}%' and` : ''
     const clientOrderQuery = client ? `clients.name LIKE '%${client}%' and` : ''
-    const carNumberOrderQuery = carNumber ? `car_number = '${carNumber}' and` : ''
+    const carNumberOrderQuery = carNumber ? `car_number LIKE '%${carNumber}%' and` : ''
     const isShownCashOrderQuery = !isShownCash ? `delivery_cash = 0 and` : ''
     const isShownCashlessOrderQuery = !isShownCashless ? `delivery_cashless = 0 and` : ''
 

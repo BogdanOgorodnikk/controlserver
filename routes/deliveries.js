@@ -32,6 +32,7 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
     const carNumberOrderQuery = carNumber ? `car_number LIKE '%${carNumber}%' and` : ''
     const isShownCashOrderQuery = !isShownCash ? `delivery_cash = 0 and` : ''
     const isShownCashlessOrderQuery = !isShownCashless ? `delivery_cashless = 0 and` : ''
+    const adminQuery = ctx.user.role_id !== 1 ? 'and (is_deleted = 0 or is_deleted IS NULL)' : ''
 
     try {
         if(ctx.user.role_id !== 1 && ctx.user.role_id !== 2 || ctx.user.ban == 1) {
@@ -41,11 +42,11 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
         const cars = await sequelize.query(
             `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
              DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
-             users.login, cars.car_number, deliveries.product, deliveries.client
+             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted
              FROM deliveries 
              JOIN users ON deliveries.creater_id = users.id
              JOIN cars ON deliveries.car_id = cars.id
-             WHERE ${productQuery} ${clientQuery} ${carNumberQuery} ${isShownCashQuery} ${isShownCashlessQuery} DATE(deliveries.date) >= '${preparedDataStart}' AND DATE(deliveries.date) <= '${preparedDataEnd}'
+             WHERE ${productQuery} ${clientQuery} ${carNumberQuery} ${isShownCashQuery} ${isShownCashlessQuery} DATE(deliveries.date) >= '${preparedDataStart}' AND DATE(deliveries.date) <= '${preparedDataEnd}' ${adminQuery}
              ORDER BY deliveries.id desc`
         )
 
@@ -98,7 +99,7 @@ router.post('/api/deliveries', authMiddleware, async ctx => {
         const newDelivery = await sequelize.query(
             `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
              DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
-             users.login, cars.car_number, deliveries.product, deliveries.client
+             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted
              FROM deliveries 
              JOIN users ON deliveries.creater_id = users.id
              JOIN cars ON deliveries.car_id = cars.id
@@ -140,11 +141,63 @@ router.put('/api/deliveries', authMiddleware, async ctx => {
         const newDelivery = await sequelize.query(
             `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
              DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
-             users.login, cars.car_number, deliveries.product, deliveries.client
+             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted
              FROM deliveries 
              JOIN users ON deliveries.creater_id = users.id
              JOIN cars ON deliveries.car_id = cars.id
              WHERE deliveries.id = ${id}`
+        )
+
+        return ctx.body = newDelivery[0][0]
+    }
+    catch(e) {
+        return ctx.body = e
+    }
+})
+
+router.put('/api/deliveries-remove/:id', authMiddleware, async ctx => {
+    try {
+        if(ctx.user.role_id != 2 || ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+
+
+        await Delivery.update(
+            {
+                is_deleted: true
+            },
+            {where: {id: ctx.params.id}}
+        )
+
+        return ctx.body = 1
+    }
+    catch(e) {
+        return ctx.body = e
+    }
+})
+
+router.put('/api/deliveries-return/:id', authMiddleware, async ctx => {
+    try {
+        if(ctx.user.role_id != 1 || ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+
+
+        await Delivery.update(
+            {
+                is_deleted: false
+            },
+            {where: {id: ctx.params.id}}
+        )
+
+        const newDelivery = await sequelize.query(
+            `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
+             DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
+             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted
+             FROM deliveries 
+             JOIN users ON deliveries.creater_id = users.id
+             JOIN cars ON deliveries.car_id = cars.id
+             WHERE deliveries.id = ${ctx.params.id}`
         )
 
         return ctx.body = newDelivery[0][0]

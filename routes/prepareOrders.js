@@ -11,6 +11,7 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
         if(ctx.user.role_id < 1 || ctx.user.role_id > 5 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
+
         if(ctx.user.role_id == 1 && ctx.user.ban == 0) {
             const order = await sequelize.query(
                 `SELECT prepare_orders.id, prepare_orders.price_cash, prepare_orders.comment, prepare_orders.note,
@@ -18,7 +19,7 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
                  prepare_orders.car_number, DATE_FORMAT(prepare_orders.data, '%d.%m.%Y') as data, prepare_orders.opt_price,
                  DATE_FORMAT(prepare_orders.data_create, '%d.%m.%Y') as data_create, 
                  prepare_orders.product_name, prepare_orders.delivery_cash, prepare_orders.delivery_cashless,
-                 prepare_orders.count, 
+                 prepare_orders.count, is_deleted,
                  prepare_orders.creater, prepare_orders.client_id, users.login, 
                  clients.name as clientName, clients.id as clientId,
                  towns.region as region, towns.name as townName
@@ -47,7 +48,7 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
                  LEFT JOIN users ON prepare_orders.creater = users.id
                  JOIN clients ON prepare_orders.client_id = clients.id
                  JOIN towns ON clients.town_id = towns.id
-                 WHERE prepare_orders.order_number = ""
+                 WHERE prepare_orders.order_number = "" and (is_deleted = 0 or is_deleted IS NULL)
                  ORDER BY prepare_orders.id`
             )
             return ctx.body = {
@@ -68,7 +69,7 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
                  LEFT JOIN users ON prepare_orders.creater = users.id
                  JOIN clients ON prepare_orders.client_id = clients.id
                  JOIN towns ON clients.town_id = towns.id
-                 WHERE prepare_orders.order_number = ""
+                 WHERE prepare_orders.order_number = "" and (is_deleted = 0 or is_deleted IS NULL)
                  ORDER BY prepare_orders.id`
             )
             return ctx.body = {
@@ -89,7 +90,7 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
                  LEFT JOIN users ON prepare_orders.creater = users.id
                  JOIN clients ON prepare_orders.client_id = clients.id
                  JOIN towns ON clients.town_id = towns.id
-                 WHERE prepare_orders.order_number = ""
+                 WHERE prepare_orders.order_number = "" and (is_deleted = 0 or is_deleted IS NULL)
                  ORDER BY prepare_orders.id`
             )
             return ctx.body = {
@@ -135,7 +136,7 @@ router.get('/api/prepareorders', authMiddleware, async ctx => {
                  FROM prepare_orders
                  JOIN clients ON prepare_orders.client_id = clients.id
                  JOIN towns ON clients.town_id = towns.id
-                 WHERE prepare_orders.client_id in (${newClientsList.join()}) && prepare_orders.order_number = ""
+                 WHERE prepare_orders.client_id in (${newClientsList.join()}) && prepare_orders.order_number = "" and (is_deleted = 0 or is_deleted IS NULL)
                  ORDER BY prepare_orders.id`
             )
 
@@ -169,7 +170,7 @@ router.post('/api/prepareorder', authMiddleware, async ctx => {
                  prepare_orders.product_name,
                  DATE_FORMAT(prepare_orders.data_create, '%d.%m.%Y') as data_create,
                  DATE_FORMAT(prepare_orders.data_create, '%d.%m.%Y') as data,
-                 prepare_orders.count,
+                 prepare_orders.count, is_deleted,
                  prepare_orders.creater, prepare_orders.region, prepare_orders.client_id, users.login
                  FROM prepare_orders
                  LEFT JOIN users ON prepare_orders.creater = users.id
@@ -308,7 +309,7 @@ router.put('/api/editprepareorder/:id', authMiddleware, async ctx => {
                  DATE_FORMAT(prepare_orders.data_create, '%d.%m.%Y') as data_create, 
                  prepare_orders.car_number, DATE_FORMAT(prepare_orders.data, '%d.%m.%Y') as data, prepare_orders.opt_price,
                  prepare_orders.product_name, prepare_orders.delivery_cash, prepare_orders.delivery_cashless,
-                 prepare_orders.count, 
+                 prepare_orders.count, is_deleted,
                  prepare_orders.creater, prepare_orders.client_id, users.login, 
                  clients.name as clientName, clients.id as clientId,
                  towns.region as region, towns.name as townName
@@ -320,6 +321,65 @@ router.put('/api/editprepareorder/:id', authMiddleware, async ctx => {
         )
 
         return ctx.body = updatedPrepareOrder[0][0]
+    }
+    catch(e) {
+        return ctx.body = e
+    }
+})
+
+router.put('/api/prepareorder-remove/:id', authMiddleware, async ctx => {
+    try {
+        if(ctx.user.role_id != 2 || ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+
+
+        await Prepare_order.update(
+            {
+                is_deleted: true
+            },
+            {where: {id: ctx.params.id}}
+        )
+
+        return ctx.body = 1
+    }
+    catch(e) {
+        return ctx.body = e
+    }
+})
+
+router.put('/api/prepareorder-return/:id', authMiddleware, async ctx => {
+    try {
+        if(ctx.user.role_id != 1 || ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+
+
+        await Prepare_order.update(
+            {
+                is_deleted: false
+            },
+            {where: {id: ctx.params.id}}
+        )
+
+        const newDelivery = await sequelize.query(
+            `SELECT prepare_orders.id, prepare_orders.price_cash, prepare_orders.comment, prepare_orders.note,
+                 prepare_orders.firm, 
+                 DATE_FORMAT(prepare_orders.data_create, '%d.%m.%Y') as data_create, 
+                 prepare_orders.car_number, DATE_FORMAT(prepare_orders.data, '%d.%m.%Y') as data, prepare_orders.opt_price,
+                 prepare_orders.product_name, prepare_orders.delivery_cash, prepare_orders.delivery_cashless,
+                 prepare_orders.count, is_deleted,
+                 prepare_orders.creater, prepare_orders.client_id, users.login, 
+                 clients.name as clientName, clients.id as clientId,
+                 towns.region as region, towns.name as townName
+                 FROM prepare_orders 
+                 LEFT JOIN users ON prepare_orders.creater = users.id
+                 JOIN clients ON prepare_orders.client_id = clients.id 
+                 JOIN towns ON clients.town_id = towns.id 
+                 WHERE prepare_orders.id = ${ctx.params.id}`
+        )
+
+        return ctx.body = newDelivery[0][0]
     }
     catch(e) {
         return ctx.body = e

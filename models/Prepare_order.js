@@ -56,7 +56,10 @@ module.exports = db.sequelize.define(
         },
         price_cash: {
             type: Sequelize.DOUBLE,
-        }
+        },
+        is_deleted: {
+            type: Sequelize.BOOLEAN,
+        },
     },
     {
         timestamps: false

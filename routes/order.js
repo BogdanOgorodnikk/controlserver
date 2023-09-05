@@ -899,6 +899,7 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
     const start = ctx.query.start;
     const end = ctx.query.end;
     const product = ctx.query.product;
+    const firm = ctx.query.firm;
     const cash = ctx.query.cash === 'true';
     const cashless = ctx.query.cashless === 'true';
 
@@ -924,20 +925,21 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
         }
 
         const productQuery = product ? `orders.product_name = '${product}' and` : ''
+        const firmQuery = firm ? `orders.firm = '${firm}' and` : ''
 
             const orders = await sequelize.query(
                 `SELECT orders.id, orders.data, orders.product_name, orders.general_sum, orders.car_number,
                  orders.pay_cash, orders.pay_cashless, orders.account_number, orders.count, orders.price_cash,
                  orders.sumseller, orders.delivery_cash
                  FROM orders
-                 WHERE ${productQuery} ${queryCash} client_id = ${client_id} and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
+                 WHERE ${productQuery} ${firmQuery} ${queryCash} client_id = ${client_id} and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
                  ORDER BY orders.id`
             )
 
         const debet = await sequelize.query(
             `SELECT sum(orders.general_sum) as amount
                  FROM orders
-                 WHERE ${productQuery} ${queryCash} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
+                 WHERE ${productQuery} ${firmQuery} ${queryCash} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
         )
 
         let sum = ''
@@ -956,7 +958,7 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
             credet = await sequelize.query(
                 `SELECT (${sum}) as amount
                  FROM orders
-                 WHERE ${productQuery} client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
+                 WHERE ${productQuery} ${firmQuery} client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
             )
         }
 
@@ -966,7 +968,7 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
             startSaldo = await sequelize.query(
                 `SELECT (${sum}) as amount
                  FROM orders
-                 WHERE ${productQuery} client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) < '${preparedDataStart}'`
+                 WHERE ${productQuery} ${firmQuery} client_id = ${client_id} and product_name != 'Перевірка' and DATE(orders.data) < '${preparedDataStart}'`
             )
         }
 
@@ -975,13 +977,13 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
         startDebet = await sequelize.query(
             `SELECT sum(orders.general_sum) as amount
                  FROM orders
-                 WHERE ${productQuery} ${queryCash} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) < '${preparedDataStart}'`
+                 WHERE ${productQuery} ${firmQuery} ${queryCash} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) < '${preparedDataStart}'`
         )
 
         const mas = await sequelize.query(
             `SELECT sum(orders.count) as amount
                  FROM orders
-                 WHERE ${productQuery} ${queryCash} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
+                 WHERE ${productQuery} ${firmQuery} ${queryCash} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
         )
 
 

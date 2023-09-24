@@ -42,7 +42,7 @@ router.get('/api/alldebts', authMiddleware, async ctx => {
         }
         if(ctx.user.role_id == 1) {
             const debts = await sequelize.query(
-                `SELECT sum(orders.debt) as sumDebt, orders.client_id, clients.name, towns.name as townName,
+                `SELECT sum(orders.general_sum) - sum(orders.pay_cash) - sum(orders.pay_cashless) as sumDebt, orders.client_id, clients.name, towns.name as townName,
                  towns.region, towns.area, clients.coefCash, clients.coefCashless,
                  sum(case when orders.note RLIKE('^Ф1') then orders.general_sum end) as genSumCash,
                  sum(orders.pay_cash) as cashMon, towns.manager_id, towns.safemanager_id,

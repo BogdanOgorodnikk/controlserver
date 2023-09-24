@@ -36,6 +36,9 @@ module.exports = db.sequelize.define(
         is_deleted: {
           type: Sequelize.BOOLEAN,
         },
+        is_accepted: {
+            type: Sequelize.BOOLEAN,
+        },
         date_create: {
             type: Sequelize.DATE
         },

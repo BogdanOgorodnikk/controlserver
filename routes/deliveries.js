@@ -42,7 +42,7 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
         const cars = await sequelize.query(
             `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
              DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
-             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted
+             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted, deliveries.comment
              FROM deliveries 
              JOIN users ON deliveries.creater_id = users.id
              JOIN cars ON deliveries.car_id = cars.id
@@ -99,7 +99,7 @@ router.post('/api/deliveries', authMiddleware, async ctx => {
         const newDelivery = await sequelize.query(
             `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
              DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
-             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted
+             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted, deliveries.comment
              FROM deliveries 
              JOIN users ON deliveries.creater_id = users.id
              JOIN cars ON deliveries.car_id = cars.id
@@ -141,7 +141,7 @@ router.put('/api/deliveries', authMiddleware, async ctx => {
         const newDelivery = await sequelize.query(
             `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
              DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
-             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted
+             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted, deliveries.comment
              FROM deliveries 
              JOIN users ON deliveries.creater_id = users.id
              JOIN cars ON deliveries.car_id = cars.id
@@ -193,7 +193,7 @@ router.put('/api/deliveries-return/:id', authMiddleware, async ctx => {
         const newDelivery = await sequelize.query(
             `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
              DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
-             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted
+             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted, deliveries.comment
              FROM deliveries 
              JOIN users ON deliveries.creater_id = users.id
              JOIN cars ON deliveries.car_id = cars.id
@@ -226,7 +226,7 @@ router.put('/api/deliveries-toggle-accept/:id', authMiddleware, async ctx => {
         const newDelivery = await sequelize.query(
             `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
              DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
-             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted
+             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted, deliveries.comment
              FROM deliveries 
              JOIN users ON deliveries.creater_id = users.id
              JOIN cars ON deliveries.car_id = cars.id

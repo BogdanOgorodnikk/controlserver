@@ -33,6 +33,9 @@ module.exports = db.sequelize.define(
         date: {
             type: Sequelize.STRING
         },
+        comment: {
+            type: Sequelize.BOOLEAN
+        },
         is_deleted: {
           type: Sequelize.BOOLEAN,
         },

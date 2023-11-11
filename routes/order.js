@@ -608,9 +608,28 @@ router.put('/api/pricecashless/:id', authMiddleware, async ctx => {
             },
             {where: {id: ctx.params.id}}
         )
-        const newOrderInfo = await sequelize.query(
+        let newOrderInfo = await sequelize.query(
             `SELECT delta_cash, delta_cashless, count FROM orders where id = ${ctx.params.id}`
         )
+
+        const newDeltaMasCash = (newOrderInfo[0][0].delta_cash / newOrderInfo[0][0].count)
+
+        if(0 > newDeltaMasCash && newDeltaMasCash >= -6) {
+            const newPrice_cash = Number(newPriceCash) + Math.floor(Math.abs(newDeltaMasCash))
+
+            await Order.update(
+                {
+                    price_cash: newPrice_cash,
+                    delta_cash: ((newPrice_cash-price_cashless)*orderInfo[0][0].count) - orderInfo[0][0].delivery_cash,
+                },
+                {where: {id: ctx.params.id}}
+            )
+
+            newOrderInfo = await sequelize.query(
+                `SELECT delta_cash, delta_cashless, count FROM orders where id = ${ctx.params.id}`
+            )
+        }
+
         const updateMas = await Order.update(
             {
                 delta_mas_cash: (newOrderInfo[0][0].delta_cash / newOrderInfo[0][0].count),
@@ -1012,6 +1031,7 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
     const region = ctx.query.region;
     const area = ctx.query.area;
     const product = ctx.query.product;
+    const firm = ctx.query.firm;
     const town = ctx.query.town;
     const note = ctx.query.note;
 
@@ -1023,10 +1043,11 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
         const regionQuery = region ? `orders.region = '${region}' and` : ''
         const areaQuery = area ? `area = '${area}' and` : ''
         const productQuery = product ? `product_name = '${product}' and` : ''
+        const firmQuery = firm ? `firm = '${firm}' and` : ''
         const townQuery = town ? `towns.id = ${town} and` : ''
         const noteQuery = note ? `note = '${note}' and` : ''
 
-        let orders
+        let orders, totalByMonthInYear
 
 
         if(ctx.user.role_id === 1) {
@@ -1035,7 +1056,7 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
              JOIN towns ON clients.town_id = towns.id
-             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}'
+             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${firmQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}'
              GROUP BY
                  YEAR(data),
                  MONTH(data),
@@ -1044,6 +1065,20 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
              YEAR(data),
                  region,
                                             
+                 MONTH(data)
+                 `)
+
+            totalByMonthInYear = await sequelize.query(
+                `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, SUM(orders.count) AS total_tons_sold
+             FROM orders
+             LEFT JOIN clients ON orders.client_id = clients.id 
+             JOIN towns ON clients.town_id = towns.id
+             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${firmQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}'
+             GROUP BY
+                 YEAR(data),
+                 MONTH(data)
+             ORDER BY
+                 YEAR(data),                                            
                  MONTH(data)
                  `)
         } else {
@@ -1053,7 +1088,7 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
              JOIN towns ON clients.town_id = towns.id
-             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}' and towns.manager_id = ${ctx.user.id}
+             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${firmQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}' and towns.manager_id = ${ctx.user.id}
              GROUP BY
                  YEAR(data),
                  MONTH(data),
@@ -1064,10 +1099,22 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
                                             
                  MONTH(data)
                  `)
+
+            totalByMonthInYear = await sequelize.query(
+                `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region,
+              SUM(orders.count) AS total_tons_sold, towns.area
+             FROM orders
+             LEFT JOIN clients ON orders.client_id = clients.id 
+             JOIN towns ON clients.town_id = towns.id
+             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${firmQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}' and towns.manager_id = ${ctx.user.id}
+             GROUP BY
+                 YEAR(data),
+                 MONTH(data),
+             ORDER BY
+             YEAR(data),                                            
+                 MONTH(data)
+                 `)
         }
-
-
-
 
         orders = orders[0].filter((item) => item.total_tons_sold)
         const result = [];
@@ -1161,8 +1208,64 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
             result.push({ region: currentRegion, year: currentYear, data });
         }
 
+        let totalByMonthInYearResult = {}
+
+        totalByMonthInYear[0].forEach((item) => {
+            if(totalByMonthInYearResult[item.year]) {
+                totalByMonthInYearResult[item.year].data.push({month: item.month, total_tons_sold: item.total_tons_sold })
+            } else {
+                totalByMonthInYearResult[item.year] = {
+                    data: [{month: item.month, total_tons_sold: item.total_tons_sold}],
+                    region: 'Ітого за',
+                    year: item.year
+                }
+            }
+        })
+
+        for(let key in totalByMonthInYearResult) {
+            if(totalByMonthInYearResult[key].data.length !== 12) {
+                const data = totalByMonthInYearResult[key].data
+                let newData = []
+
+                for (let i = 1; i <= 12; i++) {
+                    const monthData = data.find(item => item.month === i); // Шукаємо об'єкт для поточного місяця
+
+                    if (monthData) {
+                        newData.push(monthData);
+                    } else {
+                        newData.push({
+                            "month": i,
+                            "total_tons_sold": 0 // Якщо даних для місяця немає, встановлюємо продажі в 0
+                        });
+                    }
+                }
+
+                totalByMonthInYearResult[key].data = [...newData]
+            }
+        }
+
+        let resultYear = ''
+        let newResult = []
+
+        result.forEach((item, index) => {
+            newResult.push(item)
+
+            if(!resultYear) {
+                resultYear = item.year
+            }
+
+            if(resultYear !== item.year) {
+                newResult.splice(index, 0, totalByMonthInYearResult[resultYear])
+
+                resultYear = ''
+            } else if(index + 1 === result.length) {
+                newResult.splice(newResult.length, 0, totalByMonthInYearResult[resultYear])
+            }
+        })
+
         return ctx.body = {
-            orders: result,
+            orders: newResult,
+            totalByMonthInYearResult,
         }
     } catch (e) {
         ctx.body = e
@@ -1407,6 +1510,27 @@ router.get('/api/manager-statisticks/:manager_id', authMiddleware, async ctx => 
                  MONTH(data)
                  `)
 
+        let statInfo = await sequelize.query(
+            `SELECT SUM(orders.count) AS total_tons_sold, sum(orders.pay_cash) as pay_cash, sum(orders.pay_cashless) as pay_cashless, sum(orders.general_sum) as general_sum
+             FROM orders
+             LEFT JOIN clients ON orders.client_id = clients.id 
+             JOIN towns ON clients.town_id = towns.id
+             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${regionQuery} data >= '${startData}' AND data <= '${endData}' and orders.product_name != 'Перевірка' and ${queryManager}
+             `)
+
+        const debtorsCount =  await sequelize.query(
+            `SELECT count(clients.id) as debtors
+             FROM clients
+             JOIN towns ON clients.town_id = towns.id
+             WHERE ${townQuery} ${noteQuery} ${areaQuery} ${productQuery} ${regionQuery} ${queryManager}
+             `)
+
+        const managerMoney = await sequelize.query(
+            `SELECT sum(orders.pay_cash) as pay_cash_manager
+             FROM orders
+             WHERE creater = ${managerId} and orders.product_name != 'Перевірка'
+             `)
+
 
 
 
@@ -1504,6 +1628,11 @@ router.get('/api/manager-statisticks/:manager_id', authMiddleware, async ctx => 
 
         return ctx.body = {
             orders: result,
+            stat: {
+                ...statInfo[0][0],
+                ...debtorsCount[0][0],
+                ...managerMoney[0][0]
+            }
         }
     } catch (e) {
         ctx.body = e

@@ -45,7 +45,7 @@ router.get('/api/managermoney/:id', authMiddleware, async ctx => {
         }
         const managerMoney = await sequelize.query(
             `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create, orders.product_name, 
-            orders.client_id, orders.pay_cash,
+            orders.client_id, orders.pay_cash, orders.creater, orders.is_accepted,
             IFNULL(clients.name, '') AS name
             FROM orders 
             LEFT JOIN clients ON orders.client_id = clients.id
@@ -64,7 +64,7 @@ router.get('/api/managermoney/:id', authMiddleware, async ctx => {
 router.post('/api/managercheckmoney/:id', authMiddleware, async ctx => {
     const {data, pay_cash} = ctx.request.body
     try {
-        if(ctx.user.role_id != 1 || ctx.user.ban == 1) {
+        if(ctx.user.role_id != 1 && ctx.user.role_id !== 5 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
 
@@ -72,13 +72,22 @@ router.post('/api/managercheckmoney/:id', authMiddleware, async ctx => {
 
         const preparedData = format(new Date(year, month - 1, day), "yyyy-MM-dd");
 
-        const checkmoney = await Order.create({
+        let dataForm = {
             data: preparedData,
-            product_name: "Перевірка", 
+            product_name: "Перевірка",
             pay_cash: pay_cash,
             creater: ctx.params.id,
-            original_data_create: new Date()
-        })
+            original_data_create: new Date(),
+            is_accepted: true
+        }
+
+        if(ctx.user.role_id === 5) {
+            dataForm.is_accepted = false
+            dataForm.creater = ctx.user.id
+        }
+
+
+        const checkmoney = await Order.create(dataForm)
 
         const managerMoney = await sequelize.query(
             `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment,
@@ -88,6 +97,34 @@ router.post('/api/managercheckmoney/:id', authMiddleware, async ctx => {
             FROM orders 
             LEFT JOIN clients ON orders.client_id = clients.id
             where orders.id = ${checkmoney.id}`
+        )
+
+        return ctx.body = managerMoney[0][0]
+    }
+    catch(e) {
+        return ctx.body = e
+    }
+})
+
+router.put('/api/updatemanagercheckmoney/:id', authMiddleware, async ctx => {
+    try {
+        if(ctx.user.role_id != 1 || ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+
+        const money = await Order.update(
+            {is_accepted: true
+            },
+            {where: {id: ctx.params.id}}
+        )
+
+        const managerMoney = await sequelize.query(
+            `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create, orders.product_name, 
+            orders.client_id, orders.pay_cash, orders.is_accepted,
+            IFNULL(clients.name, '') AS name
+            FROM orders 
+            LEFT JOIN clients ON orders.client_id = clients.id
+            where orders.id = ${ctx.params.id}`
         )
 
         return ctx.body = managerMoney[0][0]

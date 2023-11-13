@@ -98,7 +98,10 @@ module.exports = db.sequelize.define(
         },
         original_data_update: {
             type: Sequelize.DATE,
-        }
+        },
+        is_accepted: {
+            type: Sequelize.BOOLEAN
+        },
     },
     {
         timestamps: false

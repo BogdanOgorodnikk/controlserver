@@ -1068,7 +1068,7 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
                  MONTH(data)
                  `)
 
-            totalByMonthInYear = await sequelize.query(
+            totalByMonthInYear = regionQuery || areaQuery || townQuery ? '' : await sequelize.query(
                 `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, SUM(orders.count) AS total_tons_sold
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
@@ -1100,7 +1100,7 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
                  MONTH(data)
                  `)
 
-            totalByMonthInYear = await sequelize.query(
+            totalByMonthInYear = regionQuery || areaQuery || townQuery ? '' : await sequelize.query(
                 `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region,
               SUM(orders.count) AS total_tons_sold, towns.area
              FROM orders
@@ -1210,63 +1210,74 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
 
         let totalByMonthInYearResult = {}
 
-        totalByMonthInYear[0].forEach((item) => {
-            if(totalByMonthInYearResult[item.year]) {
-                totalByMonthInYearResult[item.year].data.push({month: item.month, total_tons_sold: item.total_tons_sold })
-            } else {
-                totalByMonthInYearResult[item.year] = {
-                    data: [{month: item.month, total_tons_sold: item.total_tons_sold}],
-                    region: 'Ітого за',
-                    year: item.year
-                }
-            }
-        })
-
-        for(let key in totalByMonthInYearResult) {
-            if(totalByMonthInYearResult[key].data.length !== 12) {
-                const data = totalByMonthInYearResult[key].data
-                let newData = []
-
-                for (let i = 1; i <= 12; i++) {
-                    const monthData = data.find(item => item.month === i); // Шукаємо об'єкт для поточного місяця
-
-                    if (monthData) {
-                        newData.push(monthData);
-                    } else {
-                        newData.push({
-                            "month": i,
-                            "total_tons_sold": 0 // Якщо даних для місяця немає, встановлюємо продажі в 0
-                        });
+        if(totalByMonthInYear) {
+            totalByMonthInYear[0].forEach((item) => {
+                if(totalByMonthInYearResult[item.year]) {
+                    totalByMonthInYearResult[item.year].data.push({month: item.month, total_tons_sold: item.total_tons_sold })
+                } else {
+                    totalByMonthInYearResult[item.year] = {
+                        data: [{month: item.month, total_tons_sold: item.total_tons_sold}],
+                        region: 'Ітого за',
+                        year: item.year,
+                        isYearTotal: true
                     }
                 }
+            })
 
-                totalByMonthInYearResult[key].data = [...newData]
+            for(let key in totalByMonthInYearResult) {
+                if(totalByMonthInYearResult[key].data.length !== 12) {
+                    const data = totalByMonthInYearResult[key].data
+                    let newData = []
+
+                    for (let i = 1; i <= 12; i++) {
+                        const monthData = data.find(item => item.month === i); // Шукаємо об'єкт для поточного місяця
+
+                        if (monthData) {
+                            newData.push(monthData);
+                        } else {
+                            newData.push({
+                                "month": i,
+                                "total_tons_sold": 0 // Якщо даних для місяця немає, встановлюємо продажі в 0
+                            });
+                        }
+                    }
+
+                    totalByMonthInYearResult[key].data = [...newData]
+                }
+            }
+
+            let resultYear = ''
+            let newResult = []
+
+            let addedCount = 0
+
+            result.forEach((item, index) => {
+                newResult.push(item)
+
+                if(!resultYear) {
+                    resultYear = item.year
+                }
+
+                if(resultYear !== item.year) {
+                    newResult.splice(index + addedCount, 0, totalByMonthInYearResult[resultYear])
+
+                    resultYear = ''
+                    addedCount += 1;
+                } else if(index + 1 === result.length) {
+                    newResult.splice(newResult.length, 0, totalByMonthInYearResult[resultYear])
+                }
+            })
+
+            return ctx.body = {
+                orders: newResult,
+            }
+        } else {
+            return ctx.body = {
+                orders: result,
             }
         }
 
-        let resultYear = ''
-        let newResult = []
 
-        result.forEach((item, index) => {
-            newResult.push(item)
-
-            if(!resultYear) {
-                resultYear = item.year
-            }
-
-            if(resultYear !== item.year) {
-                newResult.splice(index, 0, totalByMonthInYearResult[resultYear])
-
-                resultYear = ''
-            } else if(index + 1 === result.length) {
-                newResult.splice(newResult.length, 0, totalByMonthInYearResult[resultYear])
-            }
-        })
-
-        return ctx.body = {
-            orders: newResult,
-            totalByMonthInYearResult,
-        }
     } catch (e) {
         ctx.body = e
     }

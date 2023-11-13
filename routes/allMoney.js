@@ -22,7 +22,7 @@ router.get('/api/cashmoney', authMiddleware, async ctx => {
         if(ctx.user.role_id === 1 || ctx.user.role_id === 3) {
             const cashmoneys = await sequelize.query(
                 `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create, orders.creater, orders.client_id, orders.product_name, orders.pay_cash, 
-                IFNULL(clients.name, '') AS name, users.login FROM orders
+                IFNULL(clients.name, '') AS name, users.login, orders.is_accepted FROM orders
                 LEFT JOIN clients ON orders.client_id = clients.id
                 JOIN users ON orders.creater = users.id 
                 WHERE firm = "" and pay_cash != 0 and product_name != "Перевірка" and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'
@@ -33,7 +33,7 @@ router.get('/api/cashmoney', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id === 5) {
             const cashmoneys = await sequelize.query(
-                `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.comment, orders.creater, orders.client_id, orders.product_name, orders.pay_cash, IFNULL(clients.name, '') AS name, users.login FROM orders
+                `SELECT orders.id, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.is_accepted, orders.comment, orders.creater, orders.client_id, orders.product_name, orders.pay_cash, IFNULL(clients.name, '') AS name, users.login FROM orders
                 LEFT JOIN clients ON orders.client_id = clients.id
                 JOIN users ON orders.creater = users.id 
                 WHERE ((clients.id IS NULL and product_name = "Перевірка" and orders.creater = ${ctx.user.id}) or (firm = "" and pay_cash != 0 and product_name != "Перевірка" and orders.creater = ${ctx.user.id})) and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'

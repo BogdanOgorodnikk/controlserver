@@ -4,6 +4,7 @@ const Personal_expense = require('../models/Personal_expense')
 const { sequelize } = require('../database/db')
 const authMiddleware = require('../middleware/auth.middleware')
 const {format} = require("date-fns");
+const Order = require("../models/Order");
 
 router.get('/api/myexpenses/:id', authMiddleware, async ctx => {
     try {
@@ -14,7 +15,7 @@ router.get('/api/myexpenses/:id', authMiddleware, async ctx => {
             return ctx.status = 404
         }
         const myexpenses = await sequelize.query(
-            `SELECT id, name, DATE_FORMAT(data, '%d.%m.%Y') as data, number, comment
+            `SELECT id, name, DATE_FORMAT(data, '%d.%m.%Y') as data, number, comment, is_accepted
             FROM personal_expenses 
             where creater = ${ctx.params.id}
             ORDER BY id`
@@ -47,7 +48,7 @@ router.get('/api/personalexpenses/:id', authMiddleware, async ctx => {
         }
         const personalExpenses = await sequelize.query(
             `SELECT id, name, number, 
-            DATE_FORMAT(data, '%d.%m.%Y') as data, DATE_FORMAT(data_create, '%d.%m.%Y') as data_create, comment
+            DATE_FORMAT(data, '%d.%m.%Y') as data, DATE_FORMAT(data_create, '%d.%m.%Y') as data_create, comment, is_accepted
             FROM personal_expenses 
             where creater = ${ctx.params.id}
             ORDER BY id`
@@ -79,7 +80,7 @@ router.post('/api/personalexpense', authMiddleware, async ctx => {
         })
 
         const myexpenses = await sequelize.query(
-            `SELECT id, name, DATE_FORMAT(data, '%d.%m.%Y') as data, number, comment
+            `SELECT id, name, DATE_FORMAT(data, '%d.%m.%Y') as data, number, comment, is_accepted
             FROM personal_expenses 
             where id = ${personalExpense.id}`
         )
@@ -94,7 +95,7 @@ router.post('/api/checkexpensesmoney/:id', authMiddleware, async ctx => {
     const {number, data} = ctx.request.body
     
     try {
-        if(ctx.user.role_id != 1 || ctx.user.ban == 1) {
+        if(ctx.user.role_id != 1 && ctx.user.role_id !== 5 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
 
@@ -102,23 +103,58 @@ router.post('/api/checkexpensesmoney/:id', authMiddleware, async ctx => {
 
         const preparedData = format(new Date(year, month - 1, day), "yyyy-MM-dd");
 
-        const checkmoney = await Personal_expense.create({
+        let formData = {
             name: 'Перевірка',
             number: number,
             data: preparedData,
-            creater: ctx.params.id
-        })
+            creater: ctx.params.id,
+            is_accepted: true
+        }
+
+        if(ctx.user.role_id === 5) {
+            formData.is_accepted = false
+            formData.creater = ctx.user.id
+        }
+
+        const checkmoney = await Personal_expense.create(formData)
 
         const myexpenses = await sequelize.query(
             `SELECT id, name,
                 DATE_FORMAT(data, '%d.%m.%Y') as data, DATE_FORMAT(data_create, '%d.%m.%Y') as data_create,
-                number, comment
+                number, comment, is_accepted
             FROM personal_expenses 
             where id = ${checkmoney.id}`
         )
 
         return ctx.body = myexpenses[0][0]
     } catch (e) {
+        return ctx.body = e
+    }
+})
+
+router.put('/api/updatepersonalexpensemoney/:id', authMiddleware, async ctx => {
+    try {
+        if(ctx.user.role_id != 1 || ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+
+        const money = await Personal_expense.update(
+            {is_accepted: true
+            },
+            {where: {id: ctx.params.id}}
+        )
+
+        const managerMoney = await sequelize.query(
+            `SELECT id, name, 
+            DATE_FORMAT(data, '%d.%m.%Y') as data, DATE_FORMAT(data_create, '%d.%m.%Y') as data_create,
+             number, comment, is_accepted
+            FROM personal_expenses 
+            where id = ${ctx.params.id}`
+        )
+
+        return ctx.body = managerMoney[0][0]
+    }
+    catch(e) {
         return ctx.body = e
     }
 })
@@ -145,7 +181,7 @@ router.put('/api/personalexpense/:id', authMiddleware, async ctx => {
         const myexpenses = await sequelize.query(
             `SELECT id, name, 
             DATE_FORMAT(data, '%d.%m.%Y') as data, DATE_FORMAT(data_create, '%d.%m.%Y') as data_create,
-             number, comment
+             number, comment, is_accepted
             FROM personal_expenses 
             where id = ${ctx.params.id}`
         )

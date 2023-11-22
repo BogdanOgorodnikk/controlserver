@@ -24,6 +24,9 @@ module.exports = db.sequelize.define(
         comment: {
             type: Sequelize.BOOLEAN
         },
+        is_accepted: {
+            type: Sequelize.BOOLEAN
+        },
     },
     {
         timestamps: false

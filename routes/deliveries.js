@@ -35,7 +35,7 @@ router.get('/api/deliveries', authMiddleware, async ctx => {
     const adminQuery = ctx.user.role_id !== 1 ? 'and (is_deleted = 0 or is_deleted IS NULL)' : ''
 
     try {
-        if(ctx.user.role_id !== 1 && ctx.user.role_id !== 2 || ctx.user.ban == 1) {
+        if(ctx.user.role_id !== 1 && ctx.user.role_id !== 2 && ctx.user.role_id !== 4 || ctx.user.ban == 1) {
             return ctx.status = 400
         }
 
@@ -112,6 +112,47 @@ router.post('/api/deliveries', authMiddleware, async ctx => {
     }
 })
 
+router.post('/api/deliveries/get-cash', authMiddleware, async ctx => {
+    const {car_id, date, cash} = ctx.request.body
+
+    try {
+        if(ctx.user.role_id !== 1 && ctx.user.role_id !== 2 || ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+
+        let [startDay, startMonth, startYear] = date.split(".");
+
+        const preparedDate = format(new Date(startYear, startMonth - 1, startDay), "yyyy-MM-dd");
+
+        const delivery = await Delivery.create({
+            car_id,
+            delivery_start: '',
+            delivery_end: '',
+            date: preparedDate,
+            cash: cash > 0 ? cash * -1 : cash,
+            cashless: '',
+            product: 'Отримання коштів',
+            client: '',
+            creater_id: ctx.user.id,
+            date_create: new Date()
+        })
+
+        const newDelivery = await sequelize.query(
+            `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
+             DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
+             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted, deliveries.comment
+             FROM deliveries 
+             JOIN users ON deliveries.creater_id = users.id
+             JOIN cars ON deliveries.car_id = cars.id
+             WHERE deliveries.id = ${delivery.id}`
+        )
+
+        return ctx.body = newDelivery[0][0]
+    } catch (e) {
+        return ctx.body = e
+    }
+})
+
 router.put('/api/deliveries', authMiddleware, async ctx => {
     const {id, car_id, delivery_start, delivery_end, date, cash, cashless, product, client} = ctx.request.body
 
@@ -134,6 +175,44 @@ router.put('/api/deliveries', authMiddleware, async ctx => {
                 cashless,
                 product,
                 client
+            },
+            {where: {id: id}}
+        )
+
+        const newDelivery = await sequelize.query(
+            `SELECT deliveries.id, deliveries.delivery_start, deliveries.delivery_end, deliveries.car_id, deliveries.cash, deliveries.cashless,
+             DATE_FORMAT(deliveries.date, '%d.%m.%Y') as date, DATE_FORMAT(deliveries.date_create, '%d.%m.%Y') as date_create,
+             users.login, cars.car_number, deliveries.product, deliveries.client, is_deleted, is_accepted, deliveries.comment
+             FROM deliveries 
+             JOIN users ON deliveries.creater_id = users.id
+             JOIN cars ON deliveries.car_id = cars.id
+             WHERE deliveries.id = ${id}`
+        )
+
+        return ctx.body = newDelivery[0][0]
+    }
+    catch(e) {
+        return ctx.body = e
+    }
+})
+
+router.put('/api/deliveries/get-cash', authMiddleware, async ctx => {
+    const {id, car_id, date, cash} = ctx.request.body
+
+    try {
+        if(ctx.user.role_id !=1 || ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+
+        let [startDay, startMonth, startYear] = date.split(".");
+
+        const preparedDate = format(new Date(startYear, startMonth - 1, startDay), "yyyy-MM-dd");
+
+        await Delivery.update(
+            {
+                car_id,
+                date: preparedDate,
+                cash: cash > 0 ? cash * -1 : cash,
             },
             {where: {id: id}}
         )
@@ -211,7 +290,17 @@ router.put('/api/deliveries-toggle-accept/:id', authMiddleware, async ctx => {
     const {is_accepted} = ctx.request.body
 
     try {
-        if(ctx.user.role_id != 1 || ctx.user.ban == 1) {
+        if(ctx.user.role_id != 1 && ctx.user.role_id !== 4 || ctx.user.ban == 1) {
+            return ctx.status = 400
+        }
+
+        const delivery = await sequelize.query(
+            `SELECT deliveries.cash, deliveries.cashless
+             FROM deliveries
+             WHERE deliveries.id = ${ctx.params.id}`
+        )
+
+        if(ctx.user.role_id === 4 && delivery[0][0].cash) {
             return ctx.status = 400
         }
 

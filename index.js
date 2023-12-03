@@ -40,6 +40,7 @@ const account = require('./routes/account')
 const curator = require('./routes/curator')
 const accountPayments = require('./routes/accountPayments')
 const deliveryComments = require('./routes/deliveryComments')
+const productPrice = require('./routes/product_price')
 
 const app = new Koa()
 app.use(bodyParser())
@@ -78,6 +79,7 @@ app.use(account.routes())
 app.use(curator.routes())
 app.use(accountPayments.routes())
 app.use(deliveryComments.routes())
+app.use(productPrice.routes())
 
 const ssl = {
     key: fs.readFileSync('./cert/key.pem', 'utf8'),

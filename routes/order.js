@@ -656,7 +656,7 @@ router.put('/api/pricecashless/:id', authMiddleware, async ctx => {
 })
 
 router.put('/api/editorder/:id', authMiddleware, async ctx => {
-    const {order_number, isSelfCar, note, car_number, firm, region, data, product_name, count, delivery_cash, delivery_cashless, price_cash, opt_price, price_cashless, client_id} = ctx.request.body
+    const {order_number, isSelfCar, note, car_number, firm, region, data, product_name, count, delivery_cash, delivery_cashless, price_cash, opt_price, price_cashless, client_id, isTransferOrder} = ctx.request.body
     try {
         if(ctx.user.role_id !=1 && ctx.user.role_id != 2 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -668,6 +668,48 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
         let [day, month, year] = data.split(".");
 
         const preparedData = format(new Date(year, month - 1, day), "yyyy-MM-dd");
+
+        if(ctx.user.role_id === 1 && isTransferOrder) {
+            const order = await Order.create({
+                creater: ctx.user.id,
+                original_data_create: new Date(),
+                isSelfCar: Number(isSelfCar),
+                order_number: order_number,
+                note: note,
+                car_number: car_number,
+                firm: firm,
+                region: region,
+                data: preparedData,
+                product_name: product_name,
+                count: count,
+                delivery_cash: delivery_cash,
+                delivery_cashless: delivery_cashless,
+                price_cash: price_cash,
+                opt_price: opt_price,
+                price_cashless: price_cashless,
+                client_id: client_id,
+                general_sum: (price_cash * count) - delivery_cash,
+                debt: (price_cash * count) - delivery_cash,
+                sumseller: price_cash * count,
+                delta_cash: ((price_cash - price_cashless) * count) - delivery_cash,
+                delta_cashless: ((price_cashless - opt_price) * count) - delivery_cashless,
+                delta_mas_cash: 0 / count,
+                delta_mas_cashless: 0 / count
+            })
+
+            const newOrderInfo = await sequelize.query(
+                `SELECT * FROM orders where id = ${order.id}`
+            )
+            const updateMas = await Order.update(
+                {
+                    delta_mas_cash: (newOrderInfo[0][0].delta_cash / count),
+                    delta_mas_cashless: (newOrderInfo[0][0].delta_cashless / count)
+                },
+                {where: {id: order.id}}
+            )
+
+            return  ctx.body = []
+        }
 
         if(ctx.user.role_id === 1) {
             const order = await Order.update(

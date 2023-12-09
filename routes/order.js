@@ -169,7 +169,7 @@ router.get('/api/suminfo/:client_id', authMiddleware, async ctx => {
             return ctx.status = 400
         }
         const sumMas = await sequelize.query(
-            `SELECT sum(count) as sumMas, sum(debt) as sumDebt FROM orders where client_id = ${client_id}`
+            `SELECT SUM(CASE WHEN orders.count >= 0 THEN orders.count ELSE 0 END) as sumMas, sum(debt) as sumDebt FROM orders where client_id = ${client_id}`
         )
         const sumPith = await sequelize.query(
             `SELECT sum(price_cash*(number * 1.6)) as sumPith FROM piths where client_id = ${client_id} and math = 1`
@@ -708,7 +708,29 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
                 {where: {id: order.id}}
             )
 
-            return  ctx.body = []
+            const orders = await Order.update(
+                {
+                    product_name: `ПЕРЕМІЩЕНО ${product_name}`,
+                    count: count > 0 ? count * -1 : count,
+                },
+                {where: {id: ctx.params.id}}
+            )
+
+            const newOrder = await sequelize.query(
+                `SELECT orders.id, orders.isSelfCar, orders.order_number, orders.note, orders.comment, orders.car_number, orders.firm,
+                DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create,
+                orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless, orders.count, 
+                orders.sumseller, orders.delivery_cash, orders.delivery_cashless, orders.general_sum, orders.pay_cash, 
+                orders.pay_cashless, orders.delta_cashless, orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash, 
+                orders.creater, orders.region, orders.debt, orders.client_id, clients.name, users.login, towns.name as town_name, 
+                towns.area FROM orders 
+                LEFT JOIN clients ON orders.client_id = clients.id 
+                JOIN users ON orders.creater = users.id
+                JOIN towns ON clients.town_id = towns.id
+                where orders.id = ${ctx.params.id}`
+            )
+
+            return ctx.body = newOrder[0][0];
         }
 
         if(ctx.user.role_id === 1) {
@@ -1042,7 +1064,7 @@ router.get('/api/reconciliation/:client_id', authMiddleware, async ctx => {
         )
 
         const mas = await sequelize.query(
-            `SELECT sum(orders.count) as amount
+            `SELECT SUM(CASE WHEN orders.count >= 0 THEN orders.count ELSE 0 END) as amount
                  FROM orders
                  WHERE ${productQuery} ${firmQuery} ${queryCash} client_id = ${client_id} and orders.count != 0 and DATE(orders.data) BETWEEN '${preparedDataStart}' AND '${preparedDataEnd}'`
         )
@@ -1094,7 +1116,7 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
 
         if(ctx.user.role_id === 1) {
             orders = await sequelize.query(
-                `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region, SUM(orders.count) AS total_tons_sold, towns.area
+                `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region, SUM(CASE WHEN orders.count >= 0 THEN orders.count ELSE 0 END) AS total_tons_sold, towns.area
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
              JOIN towns ON clients.town_id = towns.id
@@ -1111,7 +1133,7 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
                  `)
 
             totalByMonthInYear = regionQuery || areaQuery || townQuery ? '' : await sequelize.query(
-                `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, SUM(orders.count) AS total_tons_sold
+                `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, SUM(CASE WHEN orders.count >= 0 THEN orders.count ELSE 0 END) AS total_tons_sold
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
              JOIN towns ON clients.town_id = towns.id
@@ -1126,7 +1148,7 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
         } else {
             orders = await sequelize.query(
              `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region,
-              SUM(orders.count) AS total_tons_sold, towns.area
+              SUM(CASE WHEN orders.count >= 0 THEN orders.count ELSE 0 END) AS total_tons_sold, towns.area
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
              JOIN towns ON clients.town_id = towns.id
@@ -1144,7 +1166,7 @@ router.get('/api/statisticks', authMiddleware, async ctx => {
 
             totalByMonthInYear = regionQuery || areaQuery || townQuery ? '' : await sequelize.query(
                 `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region,
-              SUM(orders.count) AS total_tons_sold, towns.area
+              SUM(CASE WHEN orders.count >= 0 THEN orders.count ELSE 0 END) AS total_tons_sold, towns.area
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
              JOIN towns ON clients.town_id = towns.id
@@ -1356,7 +1378,7 @@ router.get('/api/statisticks/:client_id', authMiddleware, async ctx => {
 
 
         let orders = await sequelize.query(
-            `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, SUM(orders.count) AS total_tons_sold
+            `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, SUM(CASE WHEN orders.count >= 0 THEN orders.count ELSE 0 END) AS total_tons_sold
              FROM orders
              WHERE ${noteQuery} ${productQuery} data >= '${startData}' AND data <= '${endData}' and orders.client_id = ${client_id}
              GROUP BY
@@ -1473,7 +1495,7 @@ router.get('/api/statisticks/town/:town_id', authMiddleware, async ctx => {
 
 
         let [orders] = await sequelize.query(
-            `SELECT YEAR(orders.data) AS year, SUM(orders.count) AS total_tons_sold, clients.id as clientId
+            `SELECT YEAR(orders.data) AS year, SUM(CASE WHEN orders.count >= 0 THEN orders.count ELSE 0 END) AS total_tons_sold, clients.id as clientId
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
              JOIN towns ON clients.town_id = towns.id
@@ -1547,7 +1569,7 @@ router.get('/api/manager-statisticks/:manager_id', authMiddleware, async ctx => 
         const queryManager = mainManager ? `towns.manager_id = ${managerId}` : `(towns.manager_id = ${managerId} or towns.safemanager_id = ${managerId} or towns.securitymanager_id = ${managerId} or towns.second_security_manager_id = ${managerId} or towns.third_security_manager_id = ${managerId} or towns.fourth_security_manager_id = ${managerId} or towns.fiveth_security_manager_id = ${managerId})`
 
         let orders = await sequelize.query(
-                `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region, SUM(orders.count) AS total_tons_sold, towns.area
+                `SELECT YEAR(orders.data) AS year, MONTH(orders.data) AS month, orders.region, SUM(CASE WHEN orders.count >= 0 THEN orders.count ELSE 0 END) AS total_tons_sold, towns.area
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
              JOIN towns ON clients.town_id = towns.id
@@ -1564,7 +1586,7 @@ router.get('/api/manager-statisticks/:manager_id', authMiddleware, async ctx => 
                  `)
 
         let statInfo = await sequelize.query(
-            `SELECT SUM(orders.count) AS total_tons_sold, sum(orders.pay_cash) as pay_cash, sum(orders.pay_cashless) as pay_cashless, sum(orders.general_sum) as general_sum
+            `SELECT SUM(CASE WHEN orders.count >= 0 THEN orders.count ELSE 0 END) AS total_tons_sold, sum(orders.pay_cash) as pay_cash, sum(orders.pay_cashless) as pay_cashless, sum(orders.general_sum) as general_sum
              FROM orders
              LEFT JOIN clients ON orders.client_id = clients.id 
              JOIN towns ON clients.town_id = towns.id

@@ -670,6 +670,18 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
         const preparedData = format(new Date(year, month - 1, day), "yyyy-MM-dd");
 
         if(ctx.user.role_id === 1 && isTransferOrder) {
+            const orderToClient = await sequelize.query(
+                `SELECT name FROM clients where id = ${client_id}`
+            )
+
+            const orderFromClient = await sequelize.query(
+                `SELECT clients.name 
+                 FROM orders
+                 LEFT JOIN clients ON orders.client_id = clients.id 
+                 where orders.id = ${ctx.params.id}
+                 `
+            )
+
             const order = await Order.create({
                 creater: ctx.user.id,
                 original_data_create: new Date(),
@@ -680,7 +692,7 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
                 firm: firm,
                 region: region,
                 data: preparedData,
-                product_name: product_name,
+                product_name: `ПЕРЕМІЩЕНО з ${orderFromClient[0][0].name} product_name`,
                 count: count,
                 delivery_cash: delivery_cash,
                 delivery_cashless: delivery_cashless,
@@ -710,8 +722,20 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
 
             const orders = await Order.update(
                 {
-                    product_name: `ПЕРЕМІЩЕНО ${product_name}`,
+                    product_name: `ПЕРЕМІЩЕНО до ${orderToClient[0][0].name} ${product_name}`,
                     count: count > 0 ? count * -1 : count,
+                    delivery_cash: 0,
+                    delivery_cashless: 0,
+                    price_cash: 0,
+                    opt_price: 0,
+                    price_cashless: 0,
+                    general_sum: 0,
+                    debt: 0,
+                    sumseller: 0,
+                    delta_cash: 0,
+                    delta_cashless: 0,
+                    delta_mas_cash: 0,
+                    delta_mas_cashless: 0
                 },
                 {where: {id: ctx.params.id}}
             )

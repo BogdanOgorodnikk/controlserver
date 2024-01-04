@@ -15,7 +15,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
         }
         if(ctx.user.role_id == 1 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT orders.id, orders.account_number, orders.isSelfCar, orders.order_number, orders.note, orders.comment, orders.car_number,
+                `SELECT orders.id, orders.seller, orders.account_number, orders.isSelfCar, orders.order_number, orders.note, orders.comment, orders.car_number,
                     if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(orders.data, '%d.%m.%Y') as data, DATE_FORMAT(orders.data_create, '%d.%m.%Y %H:%i') as data_create,
                     orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless,
                     orders.count, orders.sumseller, orders.delivery_cash, orders.delivery_cashless,
@@ -54,7 +54,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 2 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, isSelfCar, orders.account_number, order_number, orders.note, orders.comment, car_number, firm, DATE_FORMAT(data, '%d.%m.%Y') as data, 
+                `SELECT id, isSelfCar, seller, orders.account_number, order_number, orders.note, orders.comment, car_number, firm, DATE_FORMAT(data, '%d.%m.%Y') as data, 
                     product_name, opt_price, count, delivery_cash, delivery_cashless, region, original_data_create 
                 FROM orders 
                 where client_id = ${client_id} and firm != "" and orders.pay_cashless = 0
@@ -85,7 +85,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 3 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, isSelfCar, orders.account_number, order_number, orders.note, orders.comment, car_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, price_cashless, count, sumseller, delivery_cash, delivery_cashless, pay_cash, pay_cashless, region
+                `SELECT id, isSelfCar, orders.seller, orders.account_number, order_number, orders.note, orders.comment, car_number, if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data, product_name, opt_price, price_cash, price_cashless, count, sumseller, delivery_cash, delivery_cashless, pay_cash, pay_cashless, region
                 FROM orders 
                 where client_id = ${client_id}
                 ORDER BY id`
@@ -95,7 +95,7 @@ router.get('/api/orders/:client_id', authMiddleware, async ctx => {
             }
         } else if(ctx.user.role_id == 4 && ctx.user.ban == 0) {
             const order = await sequelize.query(
-                `SELECT id, account_number, isSelfCar, order_number, orders.note, orders.comment, car_number, original_data_update,
+                `SELECT id, account_number, orders.seller, isSelfCar, order_number, orders.note, orders.comment, car_number, original_data_update,
                 if(orders.pay_cashless = 0, orders.firm, "") as firm, DATE_FORMAT(data, '%d.%m.%Y') as data,
                 product_name, opt_price, price_cash, delta_mas_cashless, price_cashless, count,
                 delivery_cash, delivery_cashless, pay_cashless, region, general_sum, pay_cash
@@ -656,7 +656,7 @@ router.put('/api/pricecashless/:id', authMiddleware, async ctx => {
 })
 
 router.put('/api/editorder/:id', authMiddleware, async ctx => {
-    const {order_number, isSelfCar, note, car_number, firm, region, data, product_name, count, delivery_cash, delivery_cashless, price_cash, opt_price, price_cashless, client_id, isTransferOrder} = ctx.request.body
+    const {order_number, seller, isSelfCar, note, car_number, firm, region, data, product_name, count, delivery_cash, delivery_cashless, price_cash, opt_price, price_cashless, client_id, isTransferOrder} = ctx.request.body
     try {
         if(ctx.user.role_id !=1 && ctx.user.role_id != 2 || ctx.user.ban == 1) {
             return ctx.status = 400
@@ -706,7 +706,8 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
                 delta_cash: ((price_cash - price_cashless) * count) - delivery_cash,
                 delta_cashless: ((price_cashless - opt_price) * count) - delivery_cashless,
                 delta_mas_cash: 0 / count,
-                delta_mas_cashless: 0 / count
+                delta_mas_cashless: 0 / count,
+                seller: seller,
             })
 
             const newOrderInfo = await sequelize.query(
@@ -746,7 +747,7 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
                 orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless, orders.count, 
                 orders.sumseller, orders.delivery_cash, orders.delivery_cashless, orders.general_sum, orders.pay_cash, 
                 orders.pay_cashless, orders.delta_cashless, orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash, 
-                orders.creater, orders.region, orders.debt, orders.client_id, clients.name, users.login, towns.name as town_name, 
+                orders.creater, orders.region, orders.seller, orders.debt, orders.client_id, clients.name, users.login, towns.name as town_name, 
                 towns.area FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 
                 JOIN users ON orders.creater = users.id
@@ -781,7 +782,8 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
                     delta_cash: ((price_cash - price_cashless) * count) - delivery_cash,
                     delta_cashless: ((price_cashless - opt_price) * count) - delivery_cashless,
                     delta_mas_cash: 0 / count,
-                    delta_mas_cashless: 0 / count
+                    delta_mas_cashless: 0 / count,
+                    seller: seller,
                 },
                 {where: {id: ctx.params.id}}
             )
@@ -811,7 +813,8 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
                     delta_cash: ((price_cash - price_cashless) * count) - delivery_cash,
                     delta_cashless: ((price_cashless - opt_price) * count) - delivery_cashless,
                     delta_mas_cash: 0 / count,
-                    delta_mas_cashless: 0 / count
+                    delta_mas_cashless: 0 / count,
+                    seller: seller,
                 },
                 {where: {id: ctx.params.id}}
             )
@@ -835,7 +838,7 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
                 orders.product_name, orders.opt_price, orders.price_cash, orders.price_cashless, orders.count, 
                 orders.sumseller, orders.delivery_cash, orders.delivery_cashless, orders.general_sum, orders.pay_cash, 
                 orders.pay_cashless, orders.delta_cashless, orders.delta_mas_cashless, orders.delta_cash, orders.delta_mas_cash, 
-                orders.creater, orders.region, orders.debt, orders.client_id, clients.name, users.login, towns.name as town_name, 
+                orders.creater, orders.region, orders.seller, orders.debt, orders.client_id, clients.name, users.login, towns.name as town_name, 
                 towns.area FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 
                 JOIN users ON orders.creater = users.id
@@ -852,7 +855,7 @@ router.put('/api/editorder/:id', authMiddleware, async ctx => {
                 DATE_FORMAT(orders.data, '%d.%m.%Y') as data,
                 orders.product_name, orders.opt_price, orders.count, 
                 orders.delivery_cash, orders.delivery_cashless,
-               orders.region, orders.client_id, clients.name, users.login, towns.name as town_name, orders.original_data_create,
+               orders.region, orders.client_id, orders.seller, clients.name, users.login, towns.name as town_name, orders.original_data_create,
                 towns.area FROM orders 
                 LEFT JOIN clients ON orders.client_id = clients.id 
                 JOIN users ON orders.creater = users.id

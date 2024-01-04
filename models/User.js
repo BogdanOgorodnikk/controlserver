@@ -25,6 +25,9 @@ module.exports = db.sequelize.define(
         ban: {
             type: Sequelize.BOOLEAN,
             defaultValue: true
+        },
+        count: {
+            type: Sequelize.INTEGER,
         }
     },
     {

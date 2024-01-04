@@ -27,7 +27,7 @@ router.put('/api/allusers/:id', authMiddleware, async ctx => {
             return ctx.status = 400
         }
         const user = await User.update(
-            {role_id, ban},
+            {role_id, ban, count: ban ? 3 : 0},
             {where: {id: ctx.params.id}}
         )
         const updatedUser = await sequelize.query(

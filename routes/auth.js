@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken')
 const validator = require('validator')
 const config = require('../config')
 const authMiddleware = require('../middleware/auth.middleware')
+const {format} = require("date-fns");
 
 router.post('/api/register', async (ctx) => {
     const {login, password} = ctx.request.body;
@@ -49,13 +50,35 @@ router.post('/api/login', async (ctx) => {
                 login: login
             }
         })
+
         if(!user) {
             return ctx.status = 404;
         }
         const isPassValid = bcrypt.compareSync(password, user.password)
-        if(!isPassValid) {
+
+        if(format(new Date(), 'HH') >= 9 && format(new Date(), 'HH') <= 20 && user.count >= 3) {
+            await User.update(
+                {count: 0, ban: false},
+                {where: {id: user.id}}
+            )
+        } else if(user.count >= 3) {
             return ctx.status = 400;
         }
+
+        if(!isPassValid) {
+            await User.update(
+                {count: user.count + 1, ban: user.count + 1 >= 3},
+                {where: {id: user.id}}
+            )
+
+            return ctx.status = 400;
+        }
+
+        await User.update(
+            {count: 0, ban: false},
+            {where: {id: user.id}}
+        )
+
         const token = jwt.sign({id: user.id, role_id: user.role_id, ban: user.ban}, config.SECRETKEY, {expiresIn: "1h"})
         return ctx.body = {
             token,

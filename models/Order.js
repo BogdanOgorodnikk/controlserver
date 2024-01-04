@@ -102,6 +102,9 @@ module.exports = db.sequelize.define(
         is_accepted: {
             type: Sequelize.BOOLEAN
         },
+        seller: {
+            type: Sequelize.STRING
+        }
     },
     {
         timestamps: false

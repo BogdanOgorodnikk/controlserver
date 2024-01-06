@@ -41,6 +41,7 @@ const curator = require('./routes/curator')
 const accountPayments = require('./routes/accountPayments')
 const deliveryComments = require('./routes/deliveryComments')
 const productPrice = require('./routes/product_price')
+const seller = require('./routes/seller')
 
 const app = new Koa()
 app.use(bodyParser())
@@ -80,6 +81,7 @@ app.use(curator.routes())
 app.use(accountPayments.routes())
 app.use(deliveryComments.routes())
 app.use(productPrice.routes())
+app.use(seller.routes())
 
 const ssl = {
     key: fs.readFileSync('./cert/key.pem', 'utf8'),

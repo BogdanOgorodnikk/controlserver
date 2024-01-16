@@ -642,7 +642,7 @@ router.put('/api/pricecashless/:id', authMiddleware, async ctx => {
             `SELECT orders.id, orders.order_number, orders.original_data_update, orders.note, orders.comment, orders.car_number, orders.firm,
               DATE_FORMAT(orders.data, '%d.%m.%Y') as data, orders.product_name, orders.opt_price, orders.price_cash,
               orders.delta_mas_cashless, orders.price_cashless, orders.count, orders.delivery_cash, orders.delivery_cashless,
-              orders.pay_cashless, orders.region, clients.name, orders.delta_cash, orders.delta_cashless, orders.delta_mas_cash
+              orders.pay_cashless, orders.seller, orders.region, clients.name, orders.delta_cash, orders.delta_cashless, orders.delta_mas_cash
              FROM orders 
              LEFT JOIN clients ON orders.client_id = clients.id
              where orders.id = ${ctx.params.id}`
